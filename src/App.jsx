@@ -110,6 +110,10 @@ export default function App() {
     setActiveIndex(Math.max(0, Math.min(i, recipients.length - 1)))
   }
 
+  function handleAddRecipients(added) {
+    setRecipients(prev => [...prev, ...added])
+  }
+
   function handleImport(imported, filename) {
     setRecipients(imported.map(r => ({ ...r, sent: false })))
     if (filename) {
@@ -231,7 +235,7 @@ export default function App() {
       </main>
 
       <ImportModal open={modals.import} onClose={() => closeModal('import')} onImport={handleImport} prefilterCompany={importPrefilter} />
-      <AddModal open={modals.add} onClose={() => closeModal('add')} onAdd={handleImport} recipients={recipients} />
+      <AddModal open={modals.add} onClose={() => closeModal('add')} onAdd={handleAddRecipients} recipients={recipients} />
       <TemplateModal
         open={modals.template}
         onClose={() => closeModal('template')}
