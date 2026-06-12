@@ -16,6 +16,7 @@ export function loadGIS() {
 
 /* ── Request OAuth token (opens Google popup) ── */
 export async function requestGmailToken(clientId) {
+  if (!clientId) throw new Error('Google Client ID is not configured. Check your environment variables.')
   await loadGIS()
   return new Promise((resolve, reject) => {
     // Timeout after 2 minutes

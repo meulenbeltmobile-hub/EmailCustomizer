@@ -17,16 +17,57 @@ Constraints:
 - Output ONLY a raw JSON object (no markdown, no explanation): {"subject":"...","body":"..."}`
 
 export default function CustomGenerateModal({ open, onClose, onGenerated, masterTemplate, companyNewsItems }) {
-  const [prompt, setPrompt]   = useState(DEFAULT_PROMPT)
   const [apiKey, setApiKey]   = useState(import.meta.env.VITE_GEMINI_API_KEY || '')
   const [model, setModel]     = useState('gemini-3.5-flash')
   const [showKey, setShowKey] = useState(false)
   const [status, setStatus]   = useState('')
   const [loading, setLoading] = useState(false)
 
+  // Prompt editor — persisted so the active prompt survives page refresh
+  const [prompt, setPrompt] = useState(() => {
+    try { return localStorage.getItem('ec_genActivePrompt') || DEFAULT_PROMPT } catch { return DEFAULT_PROMPT }
+  })
+  const [promptName, setPromptName] = useState(() => {
+    try { return localStorage.getItem('ec_genActivePromptName') || '' } catch { return '' }
+  })
+  const [promptOpen, setPromptOpen]     = useState(false)
+  const [libraryOpen, setLibraryOpen]   = useState(false)
+  const [savedPrompts, setSavedPrompts] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('ec_genSavedPrompts')) || [] } catch { return [] }
+  })
+
+  useEffect(() => { localStorage.setItem('ec_genSavedPrompts', JSON.stringify(savedPrompts)) }, [savedPrompts])
+  useEffect(() => { localStorage.setItem('ec_genActivePrompt', prompt) }, [prompt])
+  useEffect(() => { localStorage.setItem('ec_genActivePromptName', promptName) }, [promptName])
+
   useEffect(() => {
     if (open) { setStatus(''); setLoading(false) }
   }, [open])
+
+  function loadPrompt(p) {
+    setPrompt(p.text)
+    setPromptName(p.name)
+    setLibraryOpen(false)
+    setPromptOpen(true)
+    showToast(`Loaded "${p.name}"`, 'success')
+  }
+
+  function savePrompt() {
+    const name = promptName.trim()
+    if (!name) { showToast('Enter a prompt name first', 'error'); return }
+    const existing = savedPrompts.find(p => p.name === name)
+    if (existing) {
+      setSavedPrompts(prev => prev.map(p => p.name === name ? { ...p, text: prompt } : p))
+      showToast(`"${name}" updated`, 'success')
+    } else {
+      setSavedPrompts(prev => [...prev, { id: Date.now(), name, text: prompt }])
+      showToast(`"${name}" saved`, 'success')
+    }
+  }
+
+  function deletePrompt(id) {
+    setSavedPrompts(prev => prev.filter(p => p.id !== id))
+  }
 
   async function generate() {
     if (!prompt.trim()) { showToast('Please enter a prompt', 'error'); return }
@@ -95,17 +136,69 @@ export default function CustomGenerateModal({ open, onClose, onGenerated, master
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1, minHeight: 0 }}>
 
-          {/* Prompt */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-              <label className="field-label">Prompt</label>
-              <button className="btn btn-ghost btn-sm" style={{ fontSize: 11 }}
-                onClick={() => setPrompt(DEFAULT_PROMPT)}>
-                Reset
+          {/* ── Prompt editor accordion ── */}
+          <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden', flexShrink: 0 }}>
+            {/* Header row */}
+            <div style={{ display: 'flex', alignItems: 'center', background: 'var(--paper-2)', borderBottom: promptOpen ? '1px solid var(--border)' : 'none' }}>
+              <button type="button" onClick={() => setPromptOpen(v => !v)}
+                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 12px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--sans)', fontSize: 12, color: 'var(--ink-2)', fontWeight: 500 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                  Generation prompt
+                  {promptName && <span style={{ fontWeight: 400, color: 'var(--ink-3)', fontSize: 11 }}>— {promptName}</span>}
+                </span>
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                  style={{ transform: promptOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                  <path d="M4 6l4 4 4-4"/>
+                </svg>
+              </button>
+              {/* Saved prompts library toggle */}
+              <button type="button" onClick={() => setLibraryOpen(v => !v)}
+                style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 10px', background: 'none', border: 'none', borderLeft: '1px solid var(--border)', cursor: 'pointer', fontFamily: 'var(--sans)', fontSize: 11, color: 'var(--ink-3)', fontWeight: 500, whiteSpace: 'nowrap' }}
+                title="Saved prompts">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                Saved
+                {savedPrompts.length > 0 && <span style={{ fontSize: 10, fontWeight: 700, background: 'var(--paper-3)', color: 'var(--ink-3)', borderRadius: 99, padding: '1px 6px' }}>{savedPrompts.length}</span>}
               </button>
             </div>
-            <textarea className="field-input" value={prompt} onChange={e => setPrompt(e.target.value)}
-              style={{ flex: 1, minHeight: 220, fontSize: 12, resize: 'vertical', lineHeight: 1.65, fontFamily: 'var(--sans)' }} />
+
+            {/* Saved prompts library */}
+            {libraryOpen && (
+              <div style={{ background: 'var(--paper)', borderBottom: '1px solid var(--border)', maxHeight: 160, overflowY: 'auto' }}>
+                {savedPrompts.length === 0 ? (
+                  <p style={{ fontSize: 12, color: 'var(--ink-3)', padding: '10px 14px', textAlign: 'center' }}>No saved prompts yet.</p>
+                ) : savedPrompts.map(p => (
+                  <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', borderBottom: '1px solid var(--border)' }}>
+                    <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
+                    <button className="btn btn-ghost btn-sm" onClick={() => loadPrompt(p)} style={{ fontSize: 11, flexShrink: 0 }}>Load</button>
+                    <button className="btn btn-ghost btn-sm btn-icon" onClick={() => { deletePrompt(p.id); showToast(`"${p.name}" deleted`) }} title="Delete" style={{ color: 'var(--ink-3)', flexShrink: 0 }}>
+                      <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                        <polyline points="2 4 4 4 14 4"/><path d="M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M13 4l-1 9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2L3 4"/>
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Editable textarea */}
+            {promptOpen && (
+              <div style={{ background: 'var(--paper)', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <textarea
+                  value={prompt}
+                  onChange={e => setPrompt(e.target.value)}
+                  style={{ width: '100%', minHeight: 220, maxHeight: 360, fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.7, color: 'var(--ink-2)', background: 'var(--paper-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 10px', resize: 'vertical', boxSizing: 'border-box' }}
+                />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  <button className="btn btn-ghost btn-sm" onClick={() => { setPrompt(DEFAULT_PROMPT); showToast('Reset to default') }} style={{ fontSize: 11 }}>Reset</button>
+                  <input className="field-input" value={promptName} onChange={e => setPromptName(e.target.value)} placeholder="Prompt name…" style={{ fontSize: 12, width: 150, padding: '4px 8px', marginLeft: 'auto' }} />
+                  <button className="btn btn-ghost btn-sm" onClick={savePrompt} style={{ fontSize: 11 }}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    Save prompt
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Context summary */}
