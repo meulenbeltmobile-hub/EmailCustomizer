@@ -162,38 +162,38 @@ export default function RecipientsPanel({ recipients, activeIndex, onRecipientsC
         </div>
       </div>
 
-      <div className="panel-body">
-        {/* ── Company dropdown filter — only when imported recipients carry a company field ── */}
-        {showFilter && (
-          <div style={{ marginTop: 12, marginBottom: 4 }}>
-            <label className="field-label" style={{ marginBottom: 5 }}>Filter by company</label>
-            <div style={{ position: 'relative' }}>
-              <select
-                value={companyFilter}
-                onChange={e => handleFilterChange(e.target.value)}
-                style={{
-                  width: '100%',
-                  fontFamily: 'var(--sans)', fontSize: 13,
-                  background: 'var(--paper-2)', border: '1px solid var(--border)',
-                  borderRadius: 'var(--radius)', padding: '7px 28px 7px 10px',
-                  color: 'var(--ink)', appearance: 'none', cursor: 'pointer',
-                  transition: 'border-color 0.15s',
-                }}
-              >
-                <option value="__ALL__">All companies ({recipients.length})</option>
-                {companies.map(co => (
-                  <option key={co} value={co}>
-                    {co} ({recipients.filter(r => r.company === co).length})
-                  </option>
-                ))}
-              </select>
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="var(--ink-3)" strokeWidth="2" strokeLinecap="round" style={{ position: 'absolute', right: 9, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
-                <path d="M4 6l4 4 4-4"/>
-              </svg>
-            </div>
+      {/* ── Company dropdown filter — fixed, never scrolls ── */}
+      {showFilter && (
+        <div style={{ padding: '0.5rem 1.25rem 0.625rem', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+          <label className="field-label" style={{ marginBottom: 5 }}>Filter by company</label>
+          <div style={{ position: 'relative' }}>
+            <select
+              value={companyFilter}
+              onChange={e => handleFilterChange(e.target.value)}
+              style={{
+                width: '100%',
+                fontFamily: 'var(--sans)', fontSize: 13,
+                background: 'var(--paper-2)', border: '1px solid var(--border)',
+                borderRadius: 'var(--radius)', padding: '7px 28px 7px 10px',
+                color: 'var(--ink)', appearance: 'none', cursor: 'pointer',
+                transition: 'border-color 0.15s',
+              }}
+            >
+              <option value="__ALL__">All companies ({recipients.length})</option>
+              {companies.map(co => (
+                <option key={co} value={co}>
+                  {co} ({recipients.filter(r => r.company === co).length})
+                </option>
+              ))}
+            </select>
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="var(--ink-3)" strokeWidth="2" strokeLinecap="round" style={{ position: 'absolute', right: 9, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+              <path d="M4 6l4 4 4-4"/>
+            </svg>
           </div>
-        )}
+        </div>
+      )}
 
+      <div className="panel-body">
         {/* ── recipient list ── */}
         <div className="recipient-list">
           {visible.length === 0 ? (

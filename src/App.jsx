@@ -245,6 +245,8 @@ export default function App() {
         savedTemplates={savedTemplates}
         onSaveToLibrary={tpl => setSavedTemplates(prev => { const idx = prev.findIndex(t => t.id === tpl.id); return idx >= 0 ? prev.map((t, i) => i === idx ? tpl : t) : [...prev, tpl] })}
         onDeleteFromLibrary={id => setSavedTemplates(prev => prev.filter(t => t.id !== id))}
+        onSyncFromSheet={remote => setSavedTemplates(remote)}
+        gmailToken={gmailAuth?.token || null}
       />
       <ViewModal open={modals.view} onClose={() => closeModal('view')} onEdit={() => openModal('template')} masterTemplate={masterTemplate} />
       <CompanyModal open={modals.company} onClose={() => closeModal('company')} onSave={setCompanyNewsItems} savedItems={companyNewsItems} initialCompany={manualCompany} />

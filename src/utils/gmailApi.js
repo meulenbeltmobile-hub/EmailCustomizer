@@ -28,7 +28,8 @@ export async function requestGmailToken(clientId) {
       client_id: clientId,
       scope: [
         'https://mail.google.com/',
-        'https://www.googleapis.com/auth/userinfo.email'
+        'https://www.googleapis.com/auth/userinfo.email',
+        'https://www.googleapis.com/auth/spreadsheets'
       ].join(' '),
       callback: r => r.error
         ? done(() => reject(new Error(r.error)))
