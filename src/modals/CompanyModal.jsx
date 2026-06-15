@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { showToast } from '../components/Toast.jsx'
-import { loadPromptsFromSheet, savePromptsToSheet } from '../utils/sheetsApi.js'
+import { loadNewsPromptsFromSheet, saveNewsPromptsToSheet } from '../utils/sheetsApi.js'
 
 /* ── Default prompt template — uses {{company}}, {{lookback}}, {{since}}, {{today}} ── */
 const DEFAULT_PROMPT_TEMPLATE = `You are a Senior Business Intelligence Analyst specializing in commercial prospecting for the global logistics and supply chain industry.
@@ -249,7 +249,7 @@ export default function CompanyModal({ open, onClose, onSave, savedItems, initia
   async function syncPromptsFromSheet() {
     if (!gmailToken || !import.meta.env.VITE_SHEETS_ID) return
     try {
-      const remote = await loadPromptsFromSheet(gmailToken, 'news')
+      const remote = await loadNewsPromptsFromSheet(gmailToken)
       setSavedPrompts(remote)
       showToast(`${remote.length} prompt(s) synced from Sheet`, 'success')
     } catch (e) {
@@ -260,7 +260,7 @@ export default function CompanyModal({ open, onClose, onSave, savedItems, initia
   async function pushPromptsToSheet(prompts) {
     if (!gmailToken || !import.meta.env.VITE_SHEETS_ID) return
     try {
-      await savePromptsToSheet(gmailToken, 'news', prompts)
+      await saveNewsPromptsToSheet(gmailToken, prompts)
     } catch (e) {
       showToast('Prompt save failed: ' + e.message, 'error')
     }

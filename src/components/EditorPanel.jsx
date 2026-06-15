@@ -5,12 +5,6 @@ export default function EditorPanel({
   onCreateTemplate, onViewTemplate,
   onFetchNews, onViewNews,
   onGenerateCustom, onViewCustom,
-  onEditCustom, onSaveCustom,
-  customSubject, customBody,
-  onCustomSubjectChange, onCustomBodyChange,
-  customSubjectRef, customBodyRef,
-  onInsertCustomPh,
-  onRegenerateCustom,
 }) {
   return (
     <section className="panel editor-panel" style={{ borderRight: 'none', overflowY: 'auto' }}>
@@ -39,21 +33,19 @@ export default function EditorPanel({
             </button>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                  <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>{masterTemplate.subject || '(no subject)'}</span>
-                  <span className="badge badge-green" style={{ flexShrink: 0 }}>✓ Saved</span>
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {(masterTemplate.body || '').replace(/\n/g, ' ').slice(0, 120)}{(masterTemplate.body || '').length > 120 ? '…' : ''}
-                </div>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>{masterTemplate.subject || '(no subject)'}</span>
+                <span className="badge badge-green" style={{ flexShrink: 0 }}>✓ Saved</span>
               </div>
-              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                <button className="btn btn-ghost btn-sm" onClick={onCreateTemplate}>Edit</button>
-                <button className="btn btn-primary btn-sm" onClick={onViewTemplate}>View</button>
+              <div style={{ fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {(masterTemplate.body || '').replace(/\n/g, ' ').slice(0, 120)}{(masterTemplate.body || '').length > 120 ? '…' : ''}
               </div>
+            </div>
+            <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+              <button className="btn btn-ghost btn-sm" onClick={onCreateTemplate}>Edit</button>
+              <button className="btn btn-primary btn-sm" onClick={onViewTemplate}>View</button>
             </div>
           </div>
         )}
@@ -103,7 +95,7 @@ export default function EditorPanel({
       </div>
 
       <div style={{ padding: '0.875rem 1.25rem' }}>
-        {customState === 'empty' && (
+        {customState !== 'saved' ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" style={{ opacity: 0.2, flexShrink: 0 }}>
               <path d="M12 20h9"/>
@@ -120,59 +112,7 @@ export default function EditorPanel({
               Generate
             </button>
           </div>
-        )}
-
-        {customState === 'editing' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
-              <span style={{ fontSize: 11, color: 'var(--ink-3)' }}>Edit and save your customized email.</span>
-              <button className="btn btn-ghost btn-sm" onClick={onRegenerateCustom}>Regenerate</button>
-            </div>
-
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '8px 10px', background: 'var(--paper-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
-              <span style={{ fontSize: 11, color: 'var(--ink-3)', marginRight: 2, lineHeight: '22px' }}>Insert:</span>
-              {[['custom-subject','{{name}}'],['custom-subject','{{firstname}}'],['custom-body','{{name}}'],['custom-body','{{firstname}}'],['custom-body','{{lastname}}'],['custom-body','{{email}}']].map(([field, ph]) => (
-                <span key={field+ph} className="ph-chip" onClick={() => onInsertCustomPh(field, ph)}>
-                  {ph}{field === 'custom-subject' ? ' → subj' : ''}
-                </span>
-              ))}
-            </div>
-
-            <div>
-              <label className="field-label" style={{ marginBottom: 4 }}>Subject</label>
-              <input
-                className="field-input"
-                ref={customSubjectRef}
-                value={customSubject}
-                onChange={e => onCustomSubjectChange(e.target.value)}
-                style={{ fontSize: 13 }}
-                placeholder="Email subject…"
-              />
-            </div>
-            <div>
-              <label className="field-label" style={{ marginBottom: 4 }}>Body</label>
-              <textarea
-                className="field-textarea"
-                ref={customBodyRef}
-                value={customBody}
-                onChange={e => onCustomBodyChange(e.target.value)}
-                style={{ minHeight: 200, fontSize: 13 }}
-              />
-            </div>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button className="btn btn-primary btn-sm" onClick={onSaveCustom}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                  <polyline points="17 21 17 13 7 13 7 21"/>
-                  <polyline points="7 3 7 8 15 8"/>
-                </svg>
-                Save
-              </button>
-            </div>
-          </div>
-        )}
-
-        {customState === 'saved' && (
+        ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
@@ -180,11 +120,12 @@ export default function EditorPanel({
                 <span className="badge badge-green" style={{ flexShrink: 0 }}>✓ Ready</span>
               </div>
               <div style={{ fontSize: 12, color: 'var(--ink-3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {customEmail.body.replace(/\n/g, ' ').slice(0, 120)}{customEmail.body.length > 120 ? '…' : ''}
+                {(customEmail.body || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120)}
+                {(customEmail.body || '').length > 120 ? '…' : ''}
               </div>
             </div>
             <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-              <button className="btn btn-ghost btn-sm" onClick={onEditCustom}>Edit</button>
+              <button className="btn btn-ghost btn-sm" onClick={onGenerateCustom}>Edit</button>
               <button className="btn btn-primary btn-sm" onClick={onViewCustom}>View</button>
             </div>
           </div>

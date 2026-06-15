@@ -1,5 +1,5 @@
-const SHEET_ID   = import.meta.env.VITE_SHEETS_ID
-const BASE       = 'https://sheets.googleapis.com/v4/spreadsheets'
+const SHEET_ID = import.meta.env.VITE_SHEETS_ID
+const BASE     = 'https://sheets.googleapis.com/v4/spreadsheets'
 
 async function api(token, path, method = 'GET', body) {
   const res = await fetch(`${BASE}/${SHEET_ID}${path}`, {
@@ -13,62 +13,78 @@ async function api(token, path, method = 'GET', body) {
 }
 
 async function ensureHeaders(token, sheet, headers) {
-  const data = await api(token, `/values/${sheet}!A1:${String.fromCharCode(64 + headers.length)}1`)
+  const col  = String.fromCharCode(64 + headers.length)
+  const data = await api(token, `/values/${sheet}!A1:${col}1`)
   const row  = (data.values || [])[0] || []
   if (!row.includes(headers[0])) {
-    await api(token, `/values/${sheet}!A1:${String.fromCharCode(64 + headers.length)}1?valueInputOption=RAW`, 'PUT', {
-      range: `${sheet}!A1:${String.fromCharCode(64 + headers.length)}1`,
+    await api(token, `/values/${sheet}!A1:${col}1?valueInputOption=RAW`, 'PUT', {
+      range: `${sheet}!A1:${col}1`,
       majorDimension: 'ROWS',
       values: [headers]
     })
   }
 }
 
-/* ── Templates ── */
+/* ── Master template (tab: "Template", single data row) ── */
 
-export async function loadTemplatesFromSheet(token) {
+export async function loadMasterTemplateFromSheet(token) {
   if (!SHEET_ID) throw new Error('VITE_SHEETS_ID is not configured')
-  const data = await api(token, `/values/Templates!A2:D`)
-  return (data.values || [])
-    .filter(r => r[0] && r[1])
-    .map(r => ({ id: +r[0] || Date.now(), name: r[1] || '', subject: r[2] || '', body: r[3] || '' }))
+  const data = await api(token, `/values/Template!A2:C2`)
+  const row  = (data.values || [])[0]
+  if (!row) return null
+  return { name: row[0] || '', subject: row[1] || '', body: row[2] || '' }
 }
 
-export async function saveTemplatesToSheet(token, templates) {
+export async function saveMasterTemplateToSheet(token, template) {
   if (!SHEET_ID) throw new Error('VITE_SHEETS_ID is not configured')
-  await ensureHeaders(token, 'Templates', ['id', 'name', 'subject', 'body'])
-  await api(token, `/values/Templates!A2:D:clear`, 'POST')
-  if (templates.length === 0) return
-  await api(token, `/values/Templates!A2:D?valueInputOption=RAW`, 'PUT', {
-    range: `Templates!A2:D`,
+  await ensureHeaders(token, 'Template', ['name', 'subject', 'body'])
+  await api(token, `/values/Template!A2:C2?valueInputOption=RAW`, 'PUT', {
+    range: 'Template!A2:C2',
     majorDimension: 'ROWS',
-    values: templates.map(t => [t.id, t.name, t.subject, t.body])
+    values: [[template.name || '', template.subject || '', template.body || '']]
   })
 }
 
-/* ── Prompts ── */
+/* ── News prompts (tab: "NewsPrompts") ── */
 
-export async function loadPromptsFromSheet(token, type) {
+export async function loadNewsPromptsFromSheet(token) {
   if (!SHEET_ID) throw new Error('VITE_SHEETS_ID is not configured')
-  const data = await api(token, `/values/Prompts!A2:D`)
+  const data = await api(token, `/values/NewsPrompts!A2:C`)
   return (data.values || [])
-    .filter(r => r[0] === type && r[1] && r[2])
-    .map(r => ({ id: +r[1] || Date.now(), name: r[2] || '', text: r[3] || '' }))
+    .filter(r => r[1])
+    .map(r => ({ id: +r[0] || Date.now(), name: r[1] || '', text: r[2] || '' }))
 }
 
-export async function savePromptsToSheet(token, type, prompts) {
+export async function saveNewsPromptsToSheet(token, prompts) {
   if (!SHEET_ID) throw new Error('VITE_SHEETS_ID is not configured')
-  await ensureHeaders(token, 'Prompts', ['type', 'id', 'name', 'text'])
-  // Load all rows, replace rows for this type, rewrite everything
-  const data = await api(token, `/values/Prompts!A2:D`)
-  const otherRows = (data.values || []).filter(r => r[0] !== type)
-  const newRows   = prompts.map(p => [type, p.id, p.name, p.text])
-  const allRows   = [...otherRows, ...newRows]
-  await api(token, `/values/Prompts!A2:D:clear`, 'POST')
-  if (allRows.length === 0) return
-  await api(token, `/values/Prompts!A2:D?valueInputOption=RAW`, 'PUT', {
-    range: `Prompts!A2:D`,
+  await ensureHeaders(token, 'NewsPrompts', ['id', 'name', 'text'])
+  await api(token, `/values/NewsPrompts!A2:C:clear`, 'POST')
+  if (prompts.length === 0) return
+  await api(token, `/values/NewsPrompts!A2:C?valueInputOption=RAW`, 'PUT', {
+    range: 'NewsPrompts!A2:C',
     majorDimension: 'ROWS',
-    values: allRows
+    values: prompts.map(p => [p.id, p.name, p.text])
+  })
+}
+
+/* ── Generation prompts (tab: "GenPrompts") ── */
+
+export async function loadGenPromptsFromSheet(token) {
+  if (!SHEET_ID) throw new Error('VITE_SHEETS_ID is not configured')
+  const data = await api(token, `/values/GenPrompts!A2:C`)
+  return (data.values || [])
+    .filter(r => r[1])
+    .map(r => ({ id: +r[0] || Date.now(), name: r[1] || '', text: r[2] || '' }))
+}
+
+export async function saveGenPromptsToSheet(token, prompts) {
+  if (!SHEET_ID) throw new Error('VITE_SHEETS_ID is not configured')
+  await ensureHeaders(token, 'GenPrompts', ['id', 'name', 'text'])
+  await api(token, `/values/GenPrompts!A2:C:clear`, 'POST')
+  if (prompts.length === 0) return
+  await api(token, `/values/GenPrompts!A2:C?valueInputOption=RAW`, 'PUT', {
+    range: 'GenPrompts!A2:C',
+    majorDimension: 'ROWS',
+    values: prompts.map(p => [p.id, p.name, p.text])
   })
 }

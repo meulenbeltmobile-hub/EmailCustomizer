@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { insertAtCursor, applyTpl } from '../utils/helpers.js'
 import { showToast } from '../components/Toast.jsx'
-import { loadTemplatesFromSheet, saveTemplatesToSheet } from '../utils/sheetsApi.js'
+import { loadMasterTemplateFromSheet, saveMasterTemplateToSheet } from '../utils/sheetsApi.js'
 
 export default function TemplateModal({ open, onClose, onSave, masterTemplate, recipients, savedTemplates = [], onSaveToLibrary = () => {}, onDeleteFromLibrary = () => {}, onSyncFromSheet = () => {}, gmailToken = null }) {
   const [subject, setSubject]               = useState('')
@@ -31,22 +31,29 @@ export default function TemplateModal({ open, onClose, onSave, masterTemplate, r
     setSyncing(true)
     setSyncStatus('')
     try {
-      const remote = await loadTemplatesFromSheet(gmailToken)
-      onSyncFromSheet(remote)
-      setSyncStatus(`Synced ${remote.length} template(s) from Sheet`)
+      const remote = await loadMasterTemplateFromSheet(gmailToken)
+      if (remote) {
+        setSubject(remote.subject || '')
+        setBody(remote.body || '')
+        setTemplateName(remote.name || '')
+        onSave(remote)
+        setSyncStatus('Master template loaded from Sheet')
+      } else {
+        setSyncStatus('Sheet is empty — nothing to pull')
+      }
     } catch (e) {
       setSyncStatus('Sheet sync failed: ' + e.message)
     }
     setSyncing(false)
   }
 
-  async function pushToSheet(templates) {
+  async function pushToSheet() {
     if (!gmailToken) { showToast('Connect Gmail first to sync', 'error'); return }
     setSyncing(true)
     setSyncStatus('')
     try {
-      await saveTemplatesToSheet(gmailToken, templates)
-      setSyncStatus(`${templates.length} template(s) saved to Sheet`)
+      await saveMasterTemplateToSheet(gmailToken, { name: templateName.trim(), subject, body })
+      setSyncStatus('Master template saved to Sheet')
     } catch (e) {
       setSyncStatus('Sheet save failed: ' + e.message)
     }
@@ -84,7 +91,7 @@ export default function TemplateModal({ open, onClose, onSave, masterTemplate, r
         ? savedTemplates.map(t => t.id === id ? tpl : t)
         : [...savedTemplates, tpl]
       onSaveToLibrary(tpl)
-      if (gmailToken && import.meta.env.VITE_SHEETS_ID) pushToSheet(updated)
+      if (gmailToken && import.meta.env.VITE_SHEETS_ID) pushToSheet()
     }
     onClose()
     showToast(name ? `"${name}" saved` : 'Template saved', 'success')
@@ -115,7 +122,25 @@ export default function TemplateModal({ open, onClose, onSave, masterTemplate, r
         </div>
         <p className="modal-sub">Write your master email. Use placeholders to personalise per recipient. Load a saved template to edit it, or click <strong>New template</strong> to start fresh.</p>
 
-        {/* ── Saved templates accordion ── */}
+        {/* ── Sheet sync bar ── */}
+        {import.meta.env.VITE_SHEETS_ID && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'var(--paper-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', marginBottom: 10, flexShrink: 0 }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ color: 'var(--ink-3)', flexShrink: 0 }}><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+            <span style={{ fontSize: 11, color: 'var(--ink-3)', flex: 1 }}>
+              {syncStatus || 'Sync master template with Google Sheet'}
+            </span>
+            <button className="btn btn-ghost btn-sm" onClick={syncFromSheet} disabled={syncing || !gmailToken} title={gmailToken ? 'Load master template from Sheet' : 'Connect Gmail to sync'} style={{ fontSize: 11, whiteSpace: 'nowrap' }}>
+              {syncing ? <span className="spinner" style={{ width: 10, height: 10 }} /> : <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>}
+              Pull
+            </button>
+            <button className="btn btn-ghost btn-sm" onClick={pushToSheet} disabled={syncing || !gmailToken} title={gmailToken ? 'Save current template to Sheet' : 'Connect Gmail to sync'} style={{ fontSize: 11, whiteSpace: 'nowrap' }}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Push
+            </button>
+          </div>
+        )}
+
+        {/* ── Saved templates accordion (local library) ── */}
         <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', marginBottom: 12, overflow: 'hidden', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', background: 'var(--paper-2)', borderBottom: libraryOpen ? '1px solid var(--border)' : 'none' }}>
           <button
@@ -125,7 +150,7 @@ export default function TemplateModal({ open, onClose, onSave, masterTemplate, r
           >
             <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-              Shared templates
+              Saved templates
               {savedTemplates.length > 0 && (
                 <span style={{ fontSize: 10, fontWeight: 700, background: 'var(--paper-3)', color: 'var(--ink-3)', borderRadius: 99, padding: '1px 7px' }}>{savedTemplates.length}</span>
               )}
@@ -134,18 +159,6 @@ export default function TemplateModal({ open, onClose, onSave, masterTemplate, r
               <path d="M4 6l4 4 4-4"/>
             </svg>
           </button>
-          {import.meta.env.VITE_SHEETS_ID && (
-            <div style={{ display: 'flex', gap: 4, padding: '0 8px', borderLeft: '1px solid var(--border)' }}>
-              <button className="btn btn-ghost btn-sm" onClick={syncFromSheet} disabled={syncing || !gmailToken} title={gmailToken ? 'Reload from Google Sheet' : 'Connect Gmail to sync'} style={{ fontSize: 11, whiteSpace: 'nowrap' }}>
-                {syncing ? <span className="spinner" style={{ width: 10, height: 10 }} /> : <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>}
-                Pull
-              </button>
-              <button className="btn btn-ghost btn-sm" onClick={() => pushToSheet(savedTemplates)} disabled={syncing || !gmailToken} title={gmailToken ? 'Save all to Google Sheet' : 'Connect Gmail to sync'} style={{ fontSize: 11, whiteSpace: 'nowrap' }}>
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                Push
-              </button>
-            </div>
-          )}
           </div>
           {libraryOpen && (
             <div style={{ maxHeight: 140, overflowY: 'auto', background: 'var(--paper)' }}>
@@ -172,11 +185,6 @@ export default function TemplateModal({ open, onClose, onSave, masterTemplate, r
                   </button>
                 </div>
               ))}
-            </div>
-          )}
-          {syncStatus && (
-            <div style={{ fontSize: 11, color: syncStatus.includes('failed') ? 'var(--accent)' : 'var(--ink-3)', padding: '5px 12px', background: 'var(--paper)', borderTop: '1px solid var(--border)' }}>
-              {syncStatus}
             </div>
           )}
         </div>

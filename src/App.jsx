@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useToast, ToastContainer, showToast } from './components/Toast.jsx'
 import Topbar from './components/Topbar.jsx'
 import RecipientsPanel from './components/RecipientsPanel.jsx'
@@ -9,11 +9,10 @@ import TemplateModal from './modals/TemplateModal.jsx'
 import ViewModal from './modals/ViewModal.jsx'
 import CompanyModal from './modals/CompanyModal.jsx'
 import ViewNewsModal from './modals/ViewNewsModal.jsx'
-import CustomGenerateModal from './modals/CustomGenerateModal.jsx'
+import CustomEmailModal from './modals/CustomEmailModal.jsx'
 import ViewCustomModal from './modals/ViewCustomModal.jsx'
-import EditCustomModal from './modals/EditCustomModal.jsx'
 import ConfigModal from './modals/ConfigModal.jsx'
-import { applyTpl, insertAtCursor } from './utils/helpers.js'
+import { applyTpl } from './utils/helpers.js'
 import { createGmailDraft } from './utils/gmailApi.js'
 
 export default function App() {
@@ -23,12 +22,12 @@ export default function App() {
   const [recipients, setRecipients] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('ec_recipients')) || []
-      return saved.map(r => ({ ...r, sent: false })) // reset sent flag each session
+      return saved.map(r => ({ ...r, sent: false }))
     } catch { return [] }
   })
   const [activeIndex, setActiveIndex] = useState(0)
 
-  // Master template — persisted to localStorage
+  // Master template
   const [masterTemplate, setMasterTemplate] = useState(() => {
     try { return JSON.parse(localStorage.getItem('ec_masterTemplate')) || { subject: '', body: '', name: '', id: null } }
     catch { return { subject: '', body: '', name: '', id: null } }
@@ -42,23 +41,15 @@ export default function App() {
   // Company news
   const [companyNewsItems, setCompanyNewsItems] = useState([])
 
-  // Custom email — persisted to localStorage
+  // Custom email
   const [customEmail, setCustomEmail] = useState(() => {
     try { return JSON.parse(localStorage.getItem('ec_customEmail')) || { subject: '', body: '' } } catch { return { subject: '', body: '' } }
   })
   const [customState, setCustomState] = useState(() => {
     try { return localStorage.getItem('ec_customState') || 'empty' } catch { return 'empty' }
   })
-  const [customSubject, setCustomSubject] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('ec_customEmail'))?.subject || '' } catch { return '' }
-  })
-  const [customBody, setCustomBody] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('ec_customEmail'))?.body || '' } catch { return '' }
-  })
-  const customSubjectRef = useRef(null)
-  const customBodyRef = useRef(null)
 
-  // Gmail OAuth auth — stored in sessionStorage (clears on tab close)
+  // Gmail OAuth
   const [gmailAuth, setGmailAuth] = useState(() => {
     try { return JSON.parse(sessionStorage.getItem('ec_gmailAuth')) || null } catch { return null }
   })
@@ -77,17 +68,17 @@ export default function App() {
     return gmailAuth.token
   }
 
-  // Company name (shared between sidebar and modals)
+  // Company name
   const [manualCompany, setManualCompany] = useState('')
   const [visibleRecipientCount, setVisibleRecipientCount] = useState(0)
   const [visibleRecipients, setVisibleRecipients] = useState([])
 
-  // Import history: [{ id, filename, recipients }]
+  // Import history
   const [importHistory, setImportHistory] = useState(() => {
     try { return JSON.parse(localStorage.getItem('ec_importHistory')) || [] } catch { return [] }
   })
 
-  // Persist state to localStorage
+  // Persist
   useEffect(() => { localStorage.setItem('ec_recipients', JSON.stringify(recipients)) }, [recipients])
   useEffect(() => { localStorage.setItem('ec_masterTemplate', JSON.stringify(masterTemplate)) }, [masterTemplate])
   useEffect(() => { localStorage.setItem('ec_savedTemplates', JSON.stringify(savedTemplates)) }, [savedTemplates])
@@ -96,7 +87,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem('ec_customState', customState) }, [customState])
 
   // Modals
-  const [modals, setModals] = useState({ import: false, add: false, template: false, view: false, company: false, viewNews: false, customGenerate: false, viewCustom: false, editCustom: false, config: false })
+  const [modals, setModals] = useState({ import: false, add: false, template: false, view: false, company: false, viewNews: false, customEmail: false, viewCustom: false, config: false })
   const [importPrefilter, setImportPrefilter] = useState('')
   function openModal(name) { setModals(m => ({ ...m, [name]: true })) }
   function closeModal(name) { setModals(m => ({ ...m, [name]: false })) }
@@ -158,27 +149,9 @@ export default function App() {
     showToast(failed ? `${sent} drafted, ${failed} failed` : `${sent} draft(s) saved to Gmail ✓`, failed ? 'error' : 'success')
   }
 
-  function handleGeneratedCustom(subject, body) {
-    setCustomSubject(subject)
-    setCustomBody(body)
-    setCustomState('editing')
-  }
-
-  function saveCustomEmail() {
-    setCustomEmail({ subject: customSubject, body: customBody })
+  function handleSaveCustomEmail({ subject, body }) {
+    setCustomEmail({ subject, body })
     setCustomState('saved')
-    showToast('Customized email saved', 'success')
-  }
-
-  function editCustomEmail() {
-    setCustomSubject(customEmail.subject)
-    setCustomBody(customEmail.body)
-    setCustomState('editing')
-  }
-
-  function handleInsertCustomPh(field, ph) {
-    if (field === 'custom-subject') insertAtCursor(customSubjectRef, setCustomSubject, ph)
-    else insertAtCursor(customBodyRef, setCustomBody, ph)
   }
 
   return (
@@ -219,18 +192,8 @@ export default function App() {
           onViewTemplate={() => openModal('view')}
           onFetchNews={() => openModal('company')}
           onViewNews={() => openModal('viewNews')}
-          onGenerateCustom={() => openModal('customGenerate')}
+          onGenerateCustom={() => openModal('customEmail')}
           onViewCustom={() => openModal('viewCustom')}
-          onEditCustom={editCustomEmail}
-          onSaveCustom={saveCustomEmail}
-          customSubject={customSubject}
-          customBody={customBody}
-          onCustomSubjectChange={setCustomSubject}
-          onCustomBodyChange={setCustomBody}
-          customSubjectRef={customSubjectRef}
-          customBodyRef={customBodyRef}
-          onInsertCustomPh={handleInsertCustomPh}
-          onRegenerateCustom={() => openModal('customGenerate')}
         />
       </main>
 
@@ -251,9 +214,16 @@ export default function App() {
       <ViewModal open={modals.view} onClose={() => closeModal('view')} onEdit={() => openModal('template')} masterTemplate={masterTemplate} />
       <CompanyModal open={modals.company} onClose={() => closeModal('company')} onSave={setCompanyNewsItems} savedItems={companyNewsItems} initialCompany={manualCompany} gmailToken={gmailAuth?.token || null} />
       <ViewNewsModal open={modals.viewNews} onClose={() => closeModal('viewNews')} newsItems={companyNewsItems} />
-      <CustomGenerateModal open={modals.customGenerate} onClose={() => closeModal('customGenerate')} onGenerated={handleGeneratedCustom} masterTemplate={masterTemplate} companyNewsItems={companyNewsItems} gmailToken={gmailAuth?.token || null} />
-      <ViewCustomModal open={modals.viewCustom} onClose={() => closeModal('viewCustom')} onEdit={() => openModal('editCustom')} onOpenAll={saveAllToGmailDrafts} customEmail={customEmail} recipients={recipients} />
-      <EditCustomModal open={modals.editCustom} onClose={() => closeModal('editCustom')} onSave={tpl => { setCustomEmail(tpl); setCustomState('saved') }} customEmail={customEmail} />
+      <CustomEmailModal
+        open={modals.customEmail}
+        onClose={() => closeModal('customEmail')}
+        onSave={handleSaveCustomEmail}
+        masterTemplate={masterTemplate}
+        companyNewsItems={companyNewsItems}
+        customEmail={customEmail}
+        gmailToken={gmailAuth?.token || null}
+      />
+      <ViewCustomModal open={modals.viewCustom} onClose={() => closeModal('viewCustom')} onEdit={() => openModal('customEmail')} onOpenAll={saveAllToGmailDrafts} customEmail={customEmail} recipients={recipients} />
       <ConfigModal open={modals.config} onClose={() => closeModal('config')} gmailAuth={gmailAuth} onGmailConnect={handleGmailConnect} onGmailDisconnect={handleGmailDisconnect} />
 
       <ToastContainer toasts={toasts} />
