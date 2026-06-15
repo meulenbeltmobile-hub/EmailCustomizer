@@ -154,6 +154,23 @@ If nothing relevant is found, return:
   "nothing_found": true
 }`
 
+function extractFirstJSON(text) {
+  let depth = 0, start = -1
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === '{') {
+      if (depth === 0) start = i
+      depth++
+    } else if (text[i] === '}') {
+      depth--
+      if (depth === 0 && start !== -1) {
+        try { return JSON.parse(text.slice(start, i + 1)) } catch {}
+        start = -1
+      }
+    }
+  }
+  return null
+}
+
 function resolvePrompt(template, name, days) {
   const today = new Date().toISOString().split('T')[0]
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
@@ -289,11 +306,10 @@ export default function CompanyModal({ open, onClose, onSave, savedItems, initia
       )
       const data = await res.json()
       if (data.error) throw new Error(data.error.message)
-      const text   = (data.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('')
-      const clean = text.replace(/```json|```/g, '').trim()
-      const match = clean.match(/\{[\s\S]*\}/)
-      if (!match) throw new Error('No JSON found in response')
-      const parsed = JSON.parse(match[0])
+      const text  = (data.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('')
+      const clean = text.replace(/```json|```/g, '')
+      const parsed = extractFirstJSON(clean)
+      if (!parsed) throw new Error('No valid JSON found in response')
 
       if (parsed.nothing_found) {
         setPending([])
