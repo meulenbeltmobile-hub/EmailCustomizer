@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { showToast } from '../components/Toast.jsx'
+import { loadPromptsFromSheet, savePromptsToSheet } from '../utils/sheetsApi.js'
 
 const DEFAULT_PROMPT = `You are an expert B2B sales copywriter specialising in logistics and supply chain solutions.
 
@@ -16,7 +17,7 @@ Constraints:
 - Keep all {{placeholders}} from the master template exactly as-is ({{firstname}}, {{name}}, {{lastname}}, {{email}}, {{company}})
 - Output ONLY a raw JSON object (no markdown, no explanation): {"subject":"...","body":"..."}`
 
-export default function CustomGenerateModal({ open, onClose, onGenerated, masterTemplate, companyNewsItems }) {
+export default function CustomGenerateModal({ open, onClose, onGenerated, masterTemplate, companyNewsItems, gmailToken = null }) {
   const [apiKey, setApiKey]   = useState(import.meta.env.VITE_GEMINI_API_KEY || '')
   const [model, setModel]     = useState('gemini-3.5-flash')
   const [showKey, setShowKey] = useState(false)
@@ -41,8 +42,29 @@ export default function CustomGenerateModal({ open, onClose, onGenerated, master
   useEffect(() => { localStorage.setItem('ec_genActivePromptName', promptName) }, [promptName])
 
   useEffect(() => {
-    if (open) { setStatus(''); setLoading(false) }
+    if (open) {
+      setStatus(''); setLoading(false)
+      if (gmailToken && import.meta.env.VITE_SHEETS_ID) syncPromptsFromSheet()
+    }
   }, [open])
+
+  async function syncPromptsFromSheet() {
+    try {
+      const remote = await loadPromptsFromSheet(gmailToken, 'generate')
+      setSavedPrompts(remote)
+    } catch (e) {
+      console.error('Prompt sync failed:', e.message)
+    }
+  }
+
+  async function pushPromptsToSheet(prompts) {
+    if (!gmailToken || !import.meta.env.VITE_SHEETS_ID) return
+    try {
+      await savePromptsToSheet(gmailToken, 'generate', prompts)
+    } catch (e) {
+      console.error('Prompt save failed:', e.message)
+    }
+  }
 
   function loadPrompt(p) {
     setPrompt(p.text)
@@ -56,17 +78,22 @@ export default function CustomGenerateModal({ open, onClose, onGenerated, master
     const name = promptName.trim()
     if (!name) { showToast('Enter a prompt name first', 'error'); return }
     const existing = savedPrompts.find(p => p.name === name)
+    let updated
     if (existing) {
-      setSavedPrompts(prev => prev.map(p => p.name === name ? { ...p, text: prompt } : p))
+      updated = savedPrompts.map(p => p.name === name ? { ...p, text: prompt } : p)
       showToast(`"${name}" updated`, 'success')
     } else {
-      setSavedPrompts(prev => [...prev, { id: Date.now(), name, text: prompt }])
+      updated = [...savedPrompts, { id: Date.now(), name, text: prompt }]
       showToast(`"${name}" saved`, 'success')
     }
+    setSavedPrompts(updated)
+    pushPromptsToSheet(updated)
   }
 
   function deletePrompt(id) {
-    setSavedPrompts(prev => prev.filter(p => p.id !== id))
+    const updated = savedPrompts.filter(p => p.id !== id)
+    setSavedPrompts(updated)
+    pushPromptsToSheet(updated)
   }
 
   async function generate() {

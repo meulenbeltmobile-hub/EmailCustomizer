@@ -249,9 +249,9 @@ export default function App() {
         gmailToken={gmailAuth?.token || null}
       />
       <ViewModal open={modals.view} onClose={() => closeModal('view')} onEdit={() => openModal('template')} masterTemplate={masterTemplate} />
-      <CompanyModal open={modals.company} onClose={() => closeModal('company')} onSave={setCompanyNewsItems} savedItems={companyNewsItems} initialCompany={manualCompany} />
+      <CompanyModal open={modals.company} onClose={() => closeModal('company')} onSave={setCompanyNewsItems} savedItems={companyNewsItems} initialCompany={manualCompany} gmailToken={gmailAuth?.token || null} />
       <ViewNewsModal open={modals.viewNews} onClose={() => closeModal('viewNews')} newsItems={companyNewsItems} />
-      <CustomGenerateModal open={modals.customGenerate} onClose={() => closeModal('customGenerate')} onGenerated={handleGeneratedCustom} masterTemplate={masterTemplate} companyNewsItems={companyNewsItems} />
+      <CustomGenerateModal open={modals.customGenerate} onClose={() => closeModal('customGenerate')} onGenerated={handleGeneratedCustom} masterTemplate={masterTemplate} companyNewsItems={companyNewsItems} gmailToken={gmailAuth?.token || null} />
       <ViewCustomModal open={modals.viewCustom} onClose={() => closeModal('viewCustom')} onEdit={() => openModal('editCustom')} onOpenAll={saveAllToGmailDrafts} customEmail={customEmail} recipients={recipients} />
       <EditCustomModal open={modals.editCustom} onClose={() => closeModal('editCustom')} onSave={tpl => { setCustomEmail(tpl); setCustomState('saved') }} customEmail={customEmail} />
       <ConfigModal open={modals.config} onClose={() => closeModal('config')} gmailAuth={gmailAuth} onGmailConnect={handleGmailConnect} onGmailDisconnect={handleGmailDisconnect} />

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { showToast } from '../components/Toast.jsx'
+import { loadPromptsFromSheet, savePromptsToSheet } from '../utils/sheetsApi.js'
 
 /* ── Default prompt template — uses {{company}}, {{lookback}}, {{since}}, {{today}} ── */
 const DEFAULT_PROMPT_TEMPLATE = `You are a Senior Business Intelligence Analyst specializing in commercial prospecting for the global logistics and supply chain industry.
@@ -163,7 +164,7 @@ function resolvePrompt(template, name, days) {
     .replace(/\{\{today\}\}/g, today)
 }
 
-export default function CompanyModal({ open, onClose, onSave, savedItems, initialCompany = '' }) {
+export default function CompanyModal({ open, onClose, onSave, savedItems, initialCompany = '', gmailToken = null }) {
   const [companyName, setCompanyName]   = useState('')
   const [lookbackDays, setLookbackDays] = useState(14)
   const [apiKey, setApiKey]             = useState(import.meta.env.VITE_GEMINI_API_KEY || '')
@@ -205,6 +206,7 @@ export default function CompanyModal({ open, onClose, onSave, savedItems, initia
       setPending(savedItems.map(i => ({ ...i, checked: true })))
       setRunStatus('')
       setSignalStrength('')
+      if (gmailToken && import.meta.env.VITE_SHEETS_ID) syncPromptsFromSheet()
     }
   }, [open])
 
@@ -226,17 +228,42 @@ export default function CompanyModal({ open, onClose, onSave, savedItems, initia
     const name = promptName.trim()
     if (!name) { showToast('Enter a prompt name first', 'error'); return }
     const existing = savedPrompts.find(p => p.name === name)
+    let updated
     if (existing) {
-      setSavedPrompts(prev => prev.map(p => p.name === name ? { ...p, text: promptTemplate } : p))
+      updated = savedPrompts.map(p => p.name === name ? { ...p, text: promptTemplate } : p)
       showToast(`"${name}" updated`, 'success')
     } else {
-      setSavedPrompts(prev => [...prev, { id: Date.now(), name, text: promptTemplate }])
+      updated = [...savedPrompts, { id: Date.now(), name, text: promptTemplate }]
       showToast(`"${name}" saved`, 'success')
     }
+    setSavedPrompts(updated)
+    pushPromptsToSheet(updated)
   }
 
   function deletePrompt(id) {
-    setSavedPrompts(prev => prev.filter(p => p.id !== id))
+    const updated = savedPrompts.filter(p => p.id !== id)
+    setSavedPrompts(updated)
+    pushPromptsToSheet(updated)
+  }
+
+  async function syncPromptsFromSheet() {
+    if (!gmailToken || !import.meta.env.VITE_SHEETS_ID) return
+    try {
+      const remote = await loadPromptsFromSheet(gmailToken, 'news')
+      setSavedPrompts(remote)
+      showToast(`${remote.length} prompt(s) synced from Sheet`, 'success')
+    } catch (e) {
+      showToast('Prompt sync failed: ' + e.message, 'error')
+    }
+  }
+
+  async function pushPromptsToSheet(prompts) {
+    if (!gmailToken || !import.meta.env.VITE_SHEETS_ID) return
+    try {
+      await savePromptsToSheet(gmailToken, 'news', prompts)
+    } catch (e) {
+      showToast('Prompt save failed: ' + e.message, 'error')
+    }
   }
 
   async function runNewsPrompt() {
