@@ -246,7 +246,7 @@ export default function TemplateModal({ open, onClose, onSave, masterTemplate, r
               </select>
             </div>
             <div style={{ fontWeight: 500, color: 'var(--ink)', marginBottom: 4, fontSize: 13 }}>{sampleRecipient ? applyTpl(subject, sampleRecipient) : subject}</div>
-            <div style={{ color: 'var(--ink-2)', whiteSpace: 'pre-wrap', lineHeight: 1.7, fontSize: 13 }}>{sampleRecipient ? applyTpl(body, sampleRecipient) : body}</div>
+            <div style={{ color: 'var(--ink-2)', lineHeight: 1.7, fontSize: 13 }} dangerouslySetInnerHTML={{ __html: (sampleRecipient ? applyTpl(body, sampleRecipient) : body).replace(/\n/g, '<br>') }} />
           </div>
         )}
 
