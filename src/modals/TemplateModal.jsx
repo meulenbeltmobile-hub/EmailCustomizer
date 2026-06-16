@@ -65,6 +65,19 @@ export default function TemplateModal({ open, onClose, onSave, masterTemplate, r
     else insertAtCursor(bodyRef, setBody, ph)
   }
 
+  function wrapSelection(tag) {
+    const ta = bodyRef.current
+    if (!ta) return
+    const start = ta.selectionStart
+    const end   = ta.selectionEnd
+    const newBody = body.slice(0, start) + `<${tag}>${body.slice(start, end)}</${tag}>` + body.slice(end)
+    setBody(newBody)
+    requestAnimationFrame(() => {
+      ta.focus()
+      ta.setSelectionRange(start + tag.length + 2, end + tag.length + 2)
+    })
+  }
+
   function loadTemplate(tpl) {
     setSubject(tpl.subject)
     setBody(tpl.body)
@@ -213,7 +226,13 @@ export default function TemplateModal({ open, onClose, onSave, masterTemplate, r
 
         {/* Body */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, marginBottom: 12 }}>
-          <label className="field-label" style={{ marginBottom: 6 }}>Email body</label>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <label className="field-label" style={{ margin: 0 }}>Email body</label>
+            <div style={{ display: 'flex', gap: 3 }}>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => wrapSelection('b')} title="Bold" style={{ fontWeight: 700, fontSize: 12, padding: '2px 7px' }}>B</button>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => wrapSelection('i')} title="Italic" style={{ fontStyle: 'italic', fontSize: 12, padding: '2px 7px' }}>I</button>
+            </div>
+          </div>
           <textarea ref={bodyRef} className="field-textarea" value={body} onChange={e => setBody(e.target.value)} style={{ flex: 1, minHeight: 0, resize: 'none' }} placeholder={"Dear {{firstname}},\n\n…"} />
         </div>
 
