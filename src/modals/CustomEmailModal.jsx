@@ -34,7 +34,7 @@ function ClearIcon() { return <svg width="12" height="12" viewBox="0 0 24 24" fi
 
 export default function CustomEmailModal({ open, onClose, onSave, masterTemplate, companyNewsItems, customEmail, gmailToken = null }) {
   const [apiKey, setApiKey]   = useState(import.meta.env.VITE_GEMINI_API_KEY || '')
-  const [model, setModel]     = useState('gemini-2.5-flash')
+  const [model, setModel]     = useState('gemini-3.5-flash-medium')
   const [showKey, setShowKey] = useState(false)
   const [loading, setLoading] = useState(false)
   const [status, setStatus]   = useState('')
@@ -154,10 +154,9 @@ export default function CustomEmailModal({ open, onClose, onSave, masterTemplate
       newsContext
 
     try {
-      const isHigh = model === 'gemini-2.5-flash-thinking'
-      const actualModel = isHigh ? 'gemini-2.5-flash' : model
+      const thinkingLevel = model === 'gemini-3.5-flash-high' ? 'high' : 'medium'
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${actualModel}:generateContent?key=${apiKey.trim()}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey.trim()}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -166,7 +165,7 @@ export default function CustomEmailModal({ open, onClose, onSave, masterTemplate
             generationConfig: {
               maxOutputTokens: 4096,
               responseMimeType: 'application/json',
-              ...(isHigh ? { thinkingConfig: { thinkingBudget: 8192 } } : {})
+              thinkingConfig: { thinkingLevel }
             }
           })
         }
@@ -283,8 +282,8 @@ export default function CustomEmailModal({ open, onClose, onSave, masterTemplate
               <div style={{ position: 'relative', flexShrink: 0 }}>
                 <select value={model} onChange={e => setModel(e.target.value)}
                   style={{ fontFamily: 'var(--sans)', fontSize: 12, background: 'var(--paper-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '7px 24px 7px 9px', color: 'var(--ink)', appearance: 'none', cursor: 'pointer' }}>
-                  <option value="gemini-2.5-flash">2.5 Flash Medium</option>
-                  <option value="gemini-2.5-flash-thinking">2.5 Flash High</option>
+                  <option value="gemini-3.5-flash-medium">3.5 Flash Medium</option>
+                  <option value="gemini-3.5-flash-high">3.5 Flash High</option>
                 </select>
                 <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="var(--ink-3)" strokeWidth="2" strokeLinecap="round" style={{ position: 'absolute', right: 7, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}><path d="M4 6l4 4 4-4"/></svg>
               </div>
