@@ -154,14 +154,20 @@ export default function CustomEmailModal({ open, onClose, onSave, masterTemplate
       newsContext
 
     try {
+      const isHigh = model === 'gemini-2.5-flash-thinking'
+      const actualModel = isHigh ? 'gemini-2.5-flash' : model
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${actualModel}:generateContent?key=${apiKey.trim()}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
-            generationConfig: { maxOutputTokens: 4096, responseMimeType: 'application/json' }
+            generationConfig: {
+              maxOutputTokens: 4096,
+              responseMimeType: 'application/json',
+              ...(isHigh ? { thinkingConfig: { thinkingBudget: 8192 } } : {})
+            }
           })
         }
       )
@@ -277,11 +283,8 @@ export default function CustomEmailModal({ open, onClose, onSave, masterTemplate
               <div style={{ position: 'relative', flexShrink: 0 }}>
                 <select value={model} onChange={e => setModel(e.target.value)}
                   style={{ fontFamily: 'var(--sans)', fontSize: 12, background: 'var(--paper-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '7px 24px 7px 9px', color: 'var(--ink)', appearance: 'none', cursor: 'pointer' }}>
-                  <option value="gemini-2.5-flash">2.5 Flash</option>
-                  <option value="gemini-2.5-pro">2.5 Pro</option>
-                  <option value="gemini-2.0-flash">2.0 Flash</option>
-                  <option value="gemini-1.5-flash">1.5 Flash</option>
-                  <option value="gemini-1.5-pro">1.5 Pro</option>
+                  <option value="gemini-2.5-flash">2.5 Flash Medium</option>
+                  <option value="gemini-2.5-flash-thinking">2.5 Flash High</option>
                 </select>
                 <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="var(--ink-3)" strokeWidth="2" strokeLinecap="round" style={{ position: 'absolute', right: 7, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}><path d="M4 6l4 4 4-4"/></svg>
               </div>
