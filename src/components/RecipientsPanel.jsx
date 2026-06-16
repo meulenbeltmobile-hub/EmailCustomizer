@@ -154,7 +154,7 @@ export default function RecipientsPanel({ recipients, activeIndex, onRecipientsC
               Delete {selected.size}
             </button>
           )}
-          <button className="btn btn-ghost btn-sm btn-icon" title="Add recipient" onClick={onAddClick}>
+          <button className="btn btn-ghost btn-sm btn-icon" title="Add recipient" onClick={() => onAddClick(companyFilter !== '__ALL__' ? companyFilter : manualCompany)}>
             <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <path d="M8 3v10M3 8h10"/>
             </svg>

@@ -182,7 +182,7 @@ export default function App() {
           activeIndex={activeIndex}
           onRecipientsChange={setRecipients}
           onSelectRecipient={selectRecipient}
-          onAddClick={() => openModal('add')}
+          onAddClick={(company) => { setManualCompany(company || manualCompany); openModal('add') }}
           onImportClick={openImport}
           manualCompany={manualCompany}
           onManualCompanyChange={setManualCompany}
