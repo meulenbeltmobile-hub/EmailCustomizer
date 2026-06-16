@@ -67,6 +67,28 @@ export async function saveNewsPromptsToSheet(token, prompts) {
   })
 }
 
+/* ── Approach prompts (tab: "ApproachPrompts") ── */
+
+export async function loadApproachPromptsFromSheet(token) {
+  if (!SHEET_ID) throw new Error('VITE_SHEETS_ID is not configured')
+  const data = await api(token, `/values/ApproachPrompts!A2:C`)
+  return (data.values || [])
+    .filter(r => r[1])
+    .map(r => ({ id: +r[0] || Date.now(), name: r[1] || '', text: r[2] || '' }))
+}
+
+export async function saveApproachPromptsToSheet(token, prompts) {
+  if (!SHEET_ID) throw new Error('VITE_SHEETS_ID is not configured')
+  await ensureHeaders(token, 'ApproachPrompts', ['id', 'name', 'text'])
+  await api(token, `/values/ApproachPrompts!A2:C:clear`, 'POST')
+  if (prompts.length === 0) return
+  await api(token, `/values/ApproachPrompts!A2:C?valueInputOption=RAW`, 'PUT', {
+    range: 'ApproachPrompts!A2:C',
+    majorDimension: 'ROWS',
+    values: prompts.map(p => [p.id, p.name, p.text])
+  })
+}
+
 /* ── Generation prompts (tab: "GenPrompts") ── */
 
 export async function loadGenPromptsFromSheet(token) {

@@ -1,9 +1,16 @@
+function companyDomain(name) {
+  return name.toLowerCase().replace(/[^a-z0-9]/g, '') + '.com'
+}
+
 export default function EditorPanel({
   masterTemplate, templateExists,
   companyNewsItems,
+  companyApproach, approachState,
   customEmail, customState,
+  activeCompany,
   onCreateTemplate, onViewTemplate,
   onFetchNews, onViewNews,
+  onAnalyzeApproach, onModifyApproach,
   onGenerateCustom, onViewCustom,
 }) {
   return (
@@ -28,7 +35,6 @@ export default function EditorPanel({
               <p style={{ fontSize: 12, color: 'var(--ink-3)' }}>Create a master email to send to all recipients.</p>
             </div>
             <button className="btn btn-primary btn-sm" onClick={onCreateTemplate}>
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M8 3v10M3 8h10"/></svg>
               Create
             </button>
           </div>
@@ -54,6 +60,31 @@ export default function EditorPanel({
       {/* Company Information */}
       <div className="panel-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 0 }}>
         <span className="panel-title">Company Information</span>
+        {activeCompany && (
+          <a
+            href={`https://${companyDomain(activeCompany)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={`Visit ${activeCompany} website`}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', color: 'var(--ink-2)', fontSize: 12, fontWeight: 500, padding: '3px 8px', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'var(--paper-2)' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--paper-3)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'var(--paper-2)'}
+          >
+            <img
+              src={`https://logo.clearbit.com/${companyDomain(activeCompany)}`}
+              alt=""
+              width="14"
+              height="14"
+              style={{ borderRadius: 2, objectFit: 'contain' }}
+              onError={e => { e.target.style.display = 'none' }}
+            />
+            {activeCompany}
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ opacity: 0.4 }}>
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+              <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+          </a>
+        )}
       </div>
 
       <div style={{ padding: '0.875rem 1.25rem' }}>
@@ -68,7 +99,6 @@ export default function EditorPanel({
               <p style={{ fontSize: 12, color: 'var(--ink-3)' }}>Fetch company news to personalise your emails.</p>
             </div>
             <button className="btn btn-primary btn-sm" onClick={onFetchNews}>
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M8 3v10M3 8h10"/></svg>
               Fetch news
             </button>
           </div>
@@ -84,6 +114,44 @@ export default function EditorPanel({
             <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
               <button className="btn btn-ghost btn-sm" onClick={onFetchNews}>Edit</button>
               <button className="btn btn-primary btn-sm" onClick={onViewNews}>View news</button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Company Approach */}
+      <div className="panel-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 0, borderTop: '1px solid var(--border)' }}>
+        <span className="panel-title">Company Approach</span>
+      </div>
+
+      <div style={{ padding: '0.875rem 1.25rem', borderBottom: '1px solid var(--border)' }}>
+        {approachState !== 'saved' ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" style={{ opacity: 0.2, flexShrink: 0 }}>
+              <path d="M2 20h.01"/><path d="M7 20v-4"/><path d="M12 20v-8"/><path d="M17 20V8"/><path d="M22 4v16"/>
+            </svg>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)', marginBottom: 1 }}>No approach yet</p>
+              <p style={{ fontSize: 12, color: 'var(--ink-3)' }}>Generate a tailored sales approach for this company.</p>
+            </div>
+            <button className="btn btn-primary btn-sm" onClick={onAnalyzeApproach}>
+              Analyze
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>Sales approach</span>
+                <span className="badge badge-green" style={{ flexShrink: 0 }}>✓ Saved</span>
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {(companyApproach || '').replace(/#+\s*/g, '').slice(0, 120)}{(companyApproach || '').length > 120 ? '…' : ''}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+              <button className="btn btn-ghost btn-sm" onClick={onAnalyzeApproach}>Re-analyze</button>
+              <button className="btn btn-primary btn-sm" onClick={onModifyApproach}>Modify</button>
             </div>
           </div>
         )}

@@ -11,6 +11,8 @@ import CompanyModal from './modals/CompanyModal.jsx'
 import ViewNewsModal from './modals/ViewNewsModal.jsx'
 import CustomEmailModal from './modals/CustomEmailModal.jsx'
 import ViewCustomModal from './modals/ViewCustomModal.jsx'
+import CompanyApproachModal from './modals/CompanyApproachModal.jsx'
+import ModifyApproachModal from './modals/ModifyApproachModal.jsx'
 import ConfigModal from './modals/ConfigModal.jsx'
 import { applyTpl } from './utils/helpers.js'
 import { createGmailDraft } from './utils/gmailApi.js'
@@ -40,6 +42,12 @@ export default function App() {
 
   // Company news
   const [companyNewsItems, setCompanyNewsItems] = useState([])
+
+  // Company approach
+  const [companyApproach, setCompanyApproach] = useState(() => {
+    try { return localStorage.getItem('ec_companyApproach') || '' } catch { return '' }
+  })
+  const approachState = companyApproach ? 'saved' : 'empty'
 
   // Custom email
   const [customEmail, setCustomEmail] = useState(() => {
@@ -83,11 +91,12 @@ export default function App() {
   useEffect(() => { localStorage.setItem('ec_masterTemplate', JSON.stringify(masterTemplate)) }, [masterTemplate])
   useEffect(() => { localStorage.setItem('ec_savedTemplates', JSON.stringify(savedTemplates)) }, [savedTemplates])
   useEffect(() => { localStorage.setItem('ec_importHistory', JSON.stringify(importHistory)) }, [importHistory])
+  useEffect(() => { localStorage.setItem('ec_companyApproach', companyApproach) }, [companyApproach])
   useEffect(() => { localStorage.setItem('ec_customEmail', JSON.stringify(customEmail)) }, [customEmail])
   useEffect(() => { localStorage.setItem('ec_customState', customState) }, [customState])
 
   // Modals
-  const [modals, setModals] = useState({ import: false, add: false, template: false, view: false, company: false, viewNews: false, customEmail: false, viewCustom: false, config: false })
+  const [modals, setModals] = useState({ import: false, add: false, template: false, view: false, company: false, viewNews: false, companyApproach: false, modifyApproach: false, customEmail: false, viewCustom: false, config: false })
   const [importPrefilter, setImportPrefilter] = useState('')
   function openModal(name) { setModals(m => ({ ...m, [name]: true })) }
   function closeModal(name) { setModals(m => ({ ...m, [name]: false })) }
@@ -186,12 +195,17 @@ export default function App() {
           masterTemplate={masterTemplate}
           templateExists={templateExists}
           companyNewsItems={companyNewsItems}
+          companyApproach={companyApproach}
+          approachState={approachState}
           customEmail={customEmail}
           customState={customState}
+          activeCompany={manualCompany}
           onCreateTemplate={() => openModal('template')}
           onViewTemplate={() => openModal('view')}
           onFetchNews={() => openModal('company')}
           onViewNews={() => openModal('viewNews')}
+          onAnalyzeApproach={() => openModal('companyApproach')}
+          onModifyApproach={() => openModal('modifyApproach')}
           onGenerateCustom={() => openModal('customEmail')}
           onViewCustom={() => openModal('viewCustom')}
         />
@@ -214,6 +228,20 @@ export default function App() {
       <ViewModal open={modals.view} onClose={() => closeModal('view')} onEdit={() => openModal('template')} masterTemplate={masterTemplate} />
       <CompanyModal open={modals.company} onClose={() => closeModal('company')} onSave={setCompanyNewsItems} savedItems={companyNewsItems} initialCompany={manualCompany} gmailToken={gmailAuth?.token || null} />
       <ViewNewsModal open={modals.viewNews} onClose={() => closeModal('viewNews')} newsItems={companyNewsItems} />
+      <CompanyApproachModal
+        open={modals.companyApproach}
+        onClose={() => closeModal('companyApproach')}
+        onSave={text => { setCompanyApproach(text); closeModal('companyApproach') }}
+        savedApproach={companyApproach}
+        initialCompany={manualCompany}
+        gmailToken={gmailAuth?.token || null}
+      />
+      <ModifyApproachModal
+        open={modals.modifyApproach}
+        onClose={() => closeModal('modifyApproach')}
+        onSave={setCompanyApproach}
+        approach={companyApproach}
+      />
       <CustomEmailModal
         open={modals.customEmail}
         onClose={() => closeModal('customEmail')}
