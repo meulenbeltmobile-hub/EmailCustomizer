@@ -182,7 +182,7 @@ export default function TemplateModal({ open, onClose, onSave, masterTemplate, r
                     <div style={{ fontSize: 11, color: 'var(--ink-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tpl.subject}</div>
                   </div>
                   <button className="btn btn-ghost btn-sm" onClick={() => loadTemplate(tpl)} style={{ fontSize: 11, flexShrink: 0 }} title="Load this template into the editor">
-                    Edit
+                    Load
                   </button>
                   <button
                     className="btn btn-ghost btn-sm btn-icon"
