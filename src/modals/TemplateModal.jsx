@@ -23,7 +23,6 @@ export default function TemplateModal({ open, onClose, onSave, masterTemplate, r
       setSampleVisible(false)
       setLibraryOpen(true)
       setSyncStatus('')
-      if (gmailToken && import.meta.env.VITE_SHEETS_ID) syncFromSheet()
     }
   }, [open])
 
@@ -104,7 +103,6 @@ export default function TemplateModal({ open, onClose, onSave, masterTemplate, r
         ? savedTemplates.map(t => t.id === id ? tpl : t)
         : [...savedTemplates, tpl]
       onSaveToLibrary(tpl)
-      if (gmailToken && import.meta.env.VITE_SHEETS_ID) pushToSheet()
     }
     onClose()
     showToast(name ? `"${name}" saved` : 'Template saved', 'success')

@@ -83,7 +83,6 @@ export default function CustomEmailModal({ open, onClose, onSave, masterTemplate
         setHasResult(false)
         if (editorRef.current) editorRef.current.innerHTML = ''
       }
-      if (gmailToken && import.meta.env.VITE_SHEETS_ID) syncPromptsFromSheet()
     }
   }, [open])
 
@@ -121,13 +120,11 @@ export default function CustomEmailModal({ open, onClose, onSave, masterTemplate
       showToast(`"${name}" saved`, 'success')
     }
     setSavedPrompts(updated)
-    pushPromptsToSheet(updated)
   }
 
   function deletePrompt(id) {
     const updated = savedPrompts.filter(p => p.id !== id)
     setSavedPrompts(updated)
-    pushPromptsToSheet(updated)
   }
 
   async function generate() {

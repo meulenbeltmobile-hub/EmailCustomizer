@@ -223,7 +223,6 @@ export default function CompanyModal({ open, onClose, onSave, savedItems, initia
       setPending(savedItems.map(i => ({ ...i, checked: true })))
       setRunStatus('')
       setSignalStrength('')
-      if (gmailToken && import.meta.env.VITE_SHEETS_ID) syncPromptsFromSheet()
     }
   }, [open])
 
@@ -254,13 +253,11 @@ export default function CompanyModal({ open, onClose, onSave, savedItems, initia
       showToast(`"${name}" saved`, 'success')
     }
     setSavedPrompts(updated)
-    pushPromptsToSheet(updated)
   }
 
   function deletePrompt(id) {
     const updated = savedPrompts.filter(p => p.id !== id)
     setSavedPrompts(updated)
-    pushPromptsToSheet(updated)
   }
 
   async function syncPromptsFromSheet() {
