@@ -16,7 +16,8 @@ export default function AddModal({ open, onClose, onAdd, recipients, defaultComp
       setStep('names')
       setNamesText('')
       setError('')
-      const result = detectEmailSyntax(recipients.filter(r => r.email?.includes('@')))
+      const pool = recipients.filter(r => r.email?.includes('@') && (!defaultCompany || r.company === defaultCompany))
+      const result = detectEmailSyntax(pool.length ? pool : recipients.filter(r => r.email?.includes('@')))
       setDetected(result)
       setSyntaxInput(result ? result.pattern : '')
     }
