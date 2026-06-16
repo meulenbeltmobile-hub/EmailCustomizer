@@ -3,7 +3,7 @@ import { detectEmailSyntax, applySyntax, syntaxLegend } from '../utils/emailSynt
 import { initials } from '../utils/helpers.js'
 import { showToast } from '../components/Toast.jsx'
 
-export default function AddModal({ open, onClose, onAdd, recipients }) {
+export default function AddModal({ open, onClose, onAdd, recipients, defaultCompany = '' }) {
   const [step, setStep] = useState('names') // 'names' | 'list'
   const [namesText, setNamesText] = useState('')
   const [syntaxInput, setSyntaxInput] = useState('')
@@ -42,7 +42,7 @@ export default function AddModal({ open, onClose, onAdd, recipients }) {
     const added = []
     drafts.forEach(d => {
       if (!d.email.includes('@')) return
-      if (!recipients.find(r => r.email === d.email)) added.push({ name: d.name, email: d.email, sent: false })
+      if (!recipients.find(r => r.email === d.email)) added.push({ name: d.name, email: d.email, company: defaultCompany, sent: false })
     })
     onAdd(added)
     onClose()

@@ -198,7 +198,7 @@ export default function App() {
       </main>
 
       <ImportModal open={modals.import} onClose={() => closeModal('import')} onImport={handleImport} prefilterCompany={importPrefilter} />
-      <AddModal open={modals.add} onClose={() => closeModal('add')} onAdd={handleAddRecipients} recipients={recipients} />
+      <AddModal open={modals.add} onClose={() => closeModal('add')} onAdd={handleAddRecipients} recipients={recipients} defaultCompany={manualCompany} />
       <TemplateModal
         open={modals.template}
         onClose={() => closeModal('template')}
