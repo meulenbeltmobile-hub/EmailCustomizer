@@ -112,7 +112,7 @@ export default function TemplateModal({ open, onClose, onSave, masterTemplate, r
 
   return (
     <div className={`modal-overlay${open ? ' open' : ''}`} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ width: 700, maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}>
+      <div className="modal" style={{ width: 800, maxHeight: '96vh', display: 'flex', flexDirection: 'column' }}>
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, flexShrink: 0 }}>
@@ -231,7 +231,7 @@ export default function TemplateModal({ open, onClose, onSave, masterTemplate, r
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => wrapSelection('i')} title="Italic" style={{ fontStyle: 'italic', fontSize: 12, padding: '2px 7px' }}>I</button>
             </div>
           </div>
-          <textarea ref={bodyRef} className="field-textarea" value={body} onChange={e => setBody(e.target.value)} style={{ flex: 1, minHeight: 0, resize: 'none' }} placeholder={"Dear {{firstname}},\n\n…"} />
+          <textarea ref={bodyRef} className="field-textarea" value={body} onChange={e => setBody(e.target.value)} style={{ flex: 1, minHeight: 320, resize: 'vertical' }} placeholder={"Dear {{firstname}},\n\n…"} />
         </div>
 
         {/* Sample render */}
