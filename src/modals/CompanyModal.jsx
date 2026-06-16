@@ -283,37 +283,78 @@ export default function CompanyModal({ open, onClose, onSave, savedItems, initia
     }
   }
 
+  async function gemini(prompt, useSearch) {
+    const body = {
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.1, maxOutputTokens: 8192 }
+    }
+    if (useSearch) body.tools = [{ google_search: {} }]
+    const res  = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+    )
+    const data = await res.json()
+    if (data.error) throw new Error(data.error.message)
+    return (data.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('')
+  }
+
   async function runNewsPrompt() {
     if (!companyName.trim()) { showToast('Please enter a company name first', 'error'); return }
     if (!apiKey.trim())      { showToast('Please enter your Gemini API key', 'error'); return }
     setRunning(true)
-    setRunStatus('Searching…')
     setSignalStrength('')
-    const name     = companyName.trim()
-    const resolved = resolvePrompt(promptTemplate, name, lookbackDays)
+    const name = companyName.trim()
     try {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts: [{ text: resolved }] }],
-            tools: [{ google_search: {} }],
-            generationConfig: { temperature: 0.1, maxOutputTokens: 8192 }
-          })
-        }
-      )
-      const data = await res.json()
-      if (data.error) throw new Error(data.error.message)
-      const text  = (data.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('')
-      const clean = text.replace(/```json|```/g, '')
-      const parsed = extractFirstJSON(clean)
-      if (!parsed) throw new Error('No valid JSON found in response')
+      // Step 1 — web search, plain text output (no JSON schema in prompt)
+      setRunStatus('Searching the web…')
+      const searchPrompt = resolvePrompt(promptTemplate, name, lookbackDays)
+        .replace(/Output requirements[\s\S]*$/, '')
+        .trim() + `\n\nOutput a detailed plain-text summary of all findings. Do not output JSON.`
+      const rawText = await gemini(searchPrompt, true)
+
+      // Step 2 — format findings as JSON, no web search
+      setRunStatus('Formatting results…')
+      const since = new Date(Date.now() - lookbackDays * 86400000).toISOString().slice(0, 10)
+      const today = new Date().toISOString().slice(0, 10)
+      const formatPrompt = `You are a JSON formatter. Convert the research findings below into strictly valid JSON matching this schema exactly. Output only JSON, no prose, no markdown.
+
+Schema:
+{
+  "company_name": string,
+  "report_date": string (YYYY-MM-DD),
+  "prospecting_signal_strength": "High" | "Medium" | "Low" | "None",
+  "top_updates": [
+    {
+      "title": string,
+      "summary": string,
+      "category": string,
+      "date": string (YYYY-MM-DD or best estimate),
+      "source_name": string,
+      "source_url": string,
+      "commercial_trigger": string,
+      "likely_pain_point": string,
+      "suggested_sales_angle": string,
+      "recommended_persona": string,
+      "sales_relevance_score": number (1-10)
+    }
+  ],
+  "recommended_next_action": "Prioritize outreach" | "Add to nurture" | "Monitor only" | "No action",
+  "nothing_found": boolean
+}
+
+Use company_name="${name}", report_date="${today}".
+If no relevant signals were found, set nothing_found=true and top_updates=[].
+
+Research findings (since ${since}):
+${rawText}`
+
+      const jsonText = await gemini(formatPrompt, false)
+      const parsed   = extractFirstJSON(jsonText.replace(/```json|```/g, ''))
+      if (!parsed) throw new Error('No valid JSON found in formatting response')
 
       if (parsed.nothing_found) {
         setPending([])
-        setRunStatus('No significant signals found in the last 90 days.')
+        setRunStatus('No significant signals found in the last ' + lookbackDays + ' days.')
       } else {
         const updates = parsed.top_updates || []
         setPending(updates.map((item, i) => ({
