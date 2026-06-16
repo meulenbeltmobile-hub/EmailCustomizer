@@ -185,7 +185,7 @@ export default function CompanyModal({ open, onClose, onSave, savedItems, initia
   const [companyName, setCompanyName]   = useState('')
   const [lookbackDays, setLookbackDays] = useState(14)
   const [apiKey, setApiKey]             = useState(import.meta.env.VITE_GEMINI_API_KEY || '')
-  const [model, setModel]               = useState('gemini-3.5-flash')
+  const [model, setModel]               = useState('gemini-2.5-flash')
   const [showKey, setShowKey]           = useState(false)
   const [pending, setPending]           = useState([])
   const [running, setRunning]           = useState(false)
