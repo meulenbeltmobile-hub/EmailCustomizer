@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-export default function RecipientsPanel({ recipients, activeIndex, onRecipientsChange, onSelectRecipient, onAddClick, onImportClick, manualCompany, onManualCompanyChange, importHistory = [], onReImport, onDeleteHistory, onVisibleCountChange }) {
+export default function RecipientsPanel({ recipients, activeIndex, onRecipientsChange, onSelectRecipient, onAddClick, onImportClick, manualCompany, onManualCompanyChange, importHistory = [], onReImport, onDeleteHistory, onVisibleCountChange, onSelectedChange }) {
   const [companyFilter, setCompanyFilter] = useState('__ALL__')
   const [selected, setSelected] = useState(new Set())
   const [selectedHistoryId, setSelectedHistoryId] = useState('__NEW__')
@@ -37,6 +37,7 @@ export default function RecipientsPanel({ recipients, activeIndex, onRecipientsC
     .filter(r => companyFilter === '__ALL__' || r.company === companyFilter)
 
   useEffect(() => { onVisibleCountChange?.(visible.length, visible) }, [visible.length])
+  useEffect(() => { onSelectedChange?.(recipients.filter(r => selected.has(r.email))) }, [selected])
 
   /* ── keep activeIndex in sync when filter changes ── */
   const visibleActiveIdx = visible.findIndex(r => recipients.indexOf(r) === activeIndex)

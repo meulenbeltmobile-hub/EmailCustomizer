@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { showToast } from '../components/Toast.jsx'
 import { loadGenPromptsFromSheet, saveGenPromptsToSheet } from '../utils/sheetsApi.js'
+import { applyTpl } from '../utils/helpers.js'
 
 const DEFAULT_PROMPT = `You are an expert B2B sales copywriter specialising in logistics and supply chain solutions.
 
@@ -32,7 +33,7 @@ function ListIcon()  { return <svg width="12" height="12" viewBox="0 0 24 24" fi
 function NumIcon()   { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg> }
 function ClearIcon() { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18"/><path d="M4 20h7"/><path d="M11 4l5 5-8 8H3v-5z"/></svg> }
 
-export default function CustomEmailModal({ open, onClose, onSave, masterTemplate, companyNewsItems, customEmail, gmailToken = null }) {
+export default function CustomEmailModal({ open, onClose, onSave, masterTemplate, companyNewsItems, customEmail, selectedRecipients = [], gmailToken = null }) {
   const [apiKey, setApiKey]   = useState(import.meta.env.VITE_GEMINI_API_KEY || '')
   const [model, setModel]     = useState('gemini-3.5-flash-medium')
   const [showKey, setShowKey] = useState(false)
@@ -52,6 +53,9 @@ export default function CustomEmailModal({ open, onClose, onSave, masterTemplate
     try { return JSON.parse(localStorage.getItem('ec_genSavedPrompts')) || [] } catch { return [] }
   })
 
+  // Recipient picker
+  const [previewEmail, setPreviewEmail] = useState('')
+
   // Result editing
   const [subject, setSubject] = useState('')
   const [hasResult, setHasResult] = useState(false)
@@ -68,6 +72,7 @@ export default function CustomEmailModal({ open, onClose, onSave, masterTemplate
       setLoading(false)
       setPromptOpen(false)
       setLibraryOpen(false)
+      setPreviewEmail(selectedRecipients.length === 1 ? selectedRecipients[0].email : '')
       // Populate editor with existing saved email if present
       if (customEmail?.subject || customEmail?.body) {
         setSubject(customEmail.subject || '')
@@ -215,6 +220,26 @@ export default function CustomEmailModal({ open, onClose, onSave, masterTemplate
         </div>
         <p className="modal-sub">Generate a personalised email from your template and company news, then edit before saving.</p>
 
+        {/* Recipient picker */}
+        {selectedRecipients.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexShrink: 0 }}>
+            <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--ink-3)', whiteSpace: 'nowrap' }}>Preview for</label>
+            <div style={{ position: 'relative', flex: 1 }}>
+              <select
+                value={previewEmail}
+                onChange={e => setPreviewEmail(e.target.value)}
+                style={{ width: '100%', fontFamily: 'var(--sans)', fontSize: 12, background: 'var(--paper-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '6px 28px 6px 10px', color: 'var(--ink)', appearance: 'none', cursor: 'pointer' }}
+              >
+                <option value="">— select a contact —</option>
+                {selectedRecipients.map(r => (
+                  <option key={r.email} value={r.email}>{r.name || r.email} {r.name ? `<${r.email}>` : ''}</option>
+                ))}
+              </select>
+              <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="var(--ink-3)" strokeWidth="2" strokeLinecap="round" style={{ position: 'absolute', right: 9, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}><path d="M4 6l4 4 4-4"/></svg>
+            </div>
+          </div>
+        )}
+
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0 }}>
 
           {/* ── Prompt accordion ── */}
@@ -340,6 +365,25 @@ export default function CustomEmailModal({ open, onClose, onSave, masterTemplate
                 onFocus={e => e.currentTarget.style.borderColor = 'var(--accent)'}
                 onBlur={e => e.currentTarget.style.borderColor = 'var(--border)'} />
             </div>
+
+            {/* Live preview for selected recipient */}
+            {previewEmail && (() => {
+              const r = selectedRecipients.find(x => x.email === previewEmail)
+              if (!r) return null
+              const body = editorRef.current?.innerHTML || ''
+              return (
+                <div style={{ background: 'var(--paper-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '10px 14px', marginBottom: 4, flexShrink: 0 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--ink-3)', marginBottom: 8 }}>
+                    Preview — {r.name || r.email}
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-3)', marginBottom: 4 }}>
+                    <strong style={{ color: 'var(--ink-2)' }}>Subject:</strong> {applyTpl(subject, r)}
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.75 }}
+                    dangerouslySetInnerHTML={{ __html: applyTpl(body, r) }} />
+                </div>
+              )
+            })()}
           </>
         )}
 

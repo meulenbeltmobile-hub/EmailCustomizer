@@ -80,6 +80,7 @@ export default function App() {
   const [manualCompany, setManualCompany] = useState('')
   const [visibleRecipientCount, setVisibleRecipientCount] = useState(0)
   const [visibleRecipients, setVisibleRecipients] = useState([])
+  const [selectedRecipients, setSelectedRecipients] = useState([])
 
   // Import history
   const [importHistory, setImportHistory] = useState(() => {
@@ -190,6 +191,7 @@ export default function App() {
           onReImport={imported => handleImport(imported)}
           onDeleteHistory={id => setImportHistory(prev => prev.filter(h => h.id !== id))}
           onVisibleCountChange={(count, list) => { setVisibleRecipientCount(count); setVisibleRecipients(list) }}
+          onSelectedChange={setSelectedRecipients}
         />
         <EditorPanel
           masterTemplate={masterTemplate}
@@ -249,6 +251,7 @@ export default function App() {
         masterTemplate={masterTemplate}
         companyNewsItems={companyNewsItems}
         customEmail={customEmail}
+        selectedRecipients={selectedRecipients}
         gmailToken={gmailAuth?.token || null}
       />
       <ViewCustomModal open={modals.viewCustom} onClose={() => closeModal('viewCustom')} onEdit={() => openModal('customEmail')} onOpenAll={saveAllToGmailDrafts} customEmail={customEmail} recipients={recipients} />
