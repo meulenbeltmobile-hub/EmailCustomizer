@@ -269,9 +269,8 @@ export default function App() {
         open={modals.viewCustom}
         onClose={() => closeModal('viewCustom')}
         onSave={updated => { handleSaveCustomEmail(updated); setViewCustomDraft(null) }}
-        onOpenAll={saveAllToGmailDrafts}
         customEmail={viewCustomDraft || customEmail}
-        selectedRecipients={selectedRecipients}
+        recipients={recipients}
       />
       <ConfigModal open={modals.config} onClose={() => closeModal('config')} gmailAuth={gmailAuth} onGmailConnect={handleGmailConnect} onGmailDisconnect={handleGmailDisconnect} />
 

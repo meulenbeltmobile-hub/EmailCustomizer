@@ -1,59 +1,93 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { applyTpl } from '../utils/helpers.js'
 
-const PLACEHOLDERS = ['{{firstname}}', '{{lastname}}', '{{name}}', '{{email}}', '{{company}}']
+const SUBJECT_PHS = [{ label: '{{company}}', ph: '{{company}}' }]
+const BODY_PHS = [
+  { label: '{{firstname}}', ph: '{{firstname}}' },
+  { label: '{{lastname}}',  ph: '{{lastname}}' },
+  { label: '{{name}}',      ph: '{{name}}' },
+  { label: '{{email}}',     ph: '{{email}}' },
+  { label: '{{company}}',   ph: '{{company}}' },
+]
+const FONTS = ['Arial', 'Calibri']
+const SIZES = ['9', '10', '11', '12']
 
-export default function ViewCustomModal({ open, onClose, onSave, onOpenAll, customEmail, selectedRecipients = [] }) {
-  const src = customEmail || { subject: '', body: '', name: '' }
+export default function ViewCustomModal({ open, onClose, onSave, customEmail, recipients = [] }) {
+  const src = customEmail || { subject: '', body: '' }
 
-  const [name, setName]       = useState(src.name || '')
   const [subject, setSubject] = useState(src.subject || '')
-  const [body, setBody]       = useState(src.body || '')
   const [previewIdx, setPreviewIdx] = useState(-1)
   const [dirty, setDirty]     = useState(false)
+  const [font, setFont]       = useState('Calibri')
+  const [fontSize, setFontSize] = useState('11')
+  const editorRef = useRef(null)
 
   useEffect(() => {
     if (open) {
-      setName(src.name || '')
       setSubject(src.subject || '')
-      setBody(src.body || '')
       setPreviewIdx(-1)
       setDirty(false)
+      if (editorRef.current) {
+        editorRef.current.innerHTML = src.body || ''
+      }
     }
   }, [open, customEmail])
 
-  function edit(field, value) {
-    if (field === 'subject') setSubject(value)
-    if (field === 'body') setBody(value)
-    if (field === 'name') setName(value)
+  // Apply font/size to new text in editor
+  useEffect(() => {
+    if (!editorRef.current) return
+    editorRef.current.style.fontFamily = font
+    editorRef.current.style.fontSize = fontSize + 'pt'
+  }, [font, fontSize])
+
+  function exec(cmd, value) {
+    editorRef.current?.focus()
+    document.execCommand(cmd, false, value ?? null)
     setDirty(true)
   }
 
-  function insertPh(ph) {
-    const ta = document.getElementById('vcm-body')
-    if (!ta) return
-    const start = ta.selectionStart
-    const end   = ta.selectionEnd
-    const next = body.slice(0, start) + ph + body.slice(end)
-    setBody(next)
+  function insertPhSubject(ph) {
+    const inp = document.getElementById('vcm-subject')
+    if (!inp) return
+    const s = inp.selectionStart, e = inp.selectionEnd
+    const next = subject.slice(0, s) + ph + subject.slice(e)
+    setSubject(next)
     setDirty(true)
-    setTimeout(() => { ta.focus(); ta.setSelectionRange(start + ph.length, start + ph.length) }, 0)
+    setTimeout(() => { inp.focus(); inp.setSelectionRange(s + ph.length, s + ph.length) }, 0)
   }
 
-  const recipient = previewIdx >= 0 ? selectedRecipients[previewIdx] : null
-  const previewSubject = recipient ? applyTpl(subject, recipient) : subject
-  const previewBody    = recipient ? applyTpl(body, recipient) : body
+  function insertPhBody(ph) {
+    editorRef.current?.focus()
+    document.execCommand('insertText', false, ph)
+    setDirty(true)
+  }
+
+  const recipient = previewIdx >= 0 ? recipients[previewIdx] : null
+
+  const previewSubject = recipient ? applyTpl(subject, recipient) : null
+  const previewBody    = recipient ? applyTpl(editorRef.current?.innerHTML || '', recipient) : null
 
   function save() {
-    onSave({ name, subject, body })
+    onSave({ subject, body: editorRef.current?.innerHTML || '' })
     setDirty(false)
   }
 
   if (!open) return null
 
+  const toolbarBtn = (label, title, action) => (
+    <button type="button" title={title} onMouseDown={e => { e.preventDefault(); action() }}
+      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 26, height: 24, border: 'none', background: 'none', borderRadius: 4, cursor: 'pointer', color: 'var(--ink-2)', padding: '0 4px', fontSize: 12 }}
+      onMouseEnter={e => e.currentTarget.style.background = 'var(--paper-3)'}
+      onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+      {label}
+    </button>
+  )
+
+  const sep = () => <div style={{ width: 1, height: 16, background: 'var(--border)', margin: '0 3px', flexShrink: 0 }} />
+
   return (
     <div className="modal-overlay open" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ width: 720, maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}>
+      <div className="modal" style={{ width: 760, maxHeight: '93vh', display: 'flex', flexDirection: 'column' }}>
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexShrink: 0 }}>
@@ -63,17 +97,16 @@ export default function ViewCustomModal({ open, onClose, onSave, onOpenAll, cust
           </button>
         </div>
 
-        {/* Template name */}
-        <div style={{ marginBottom: 12, flexShrink: 0 }}>
-          <label className="field-label" style={{ marginBottom: 4 }}>Template name</label>
-          <input className="field-input" value={name} onChange={e => edit('name', e.target.value)} placeholder="e.g. Q3 outreach — logistics" style={{ fontSize: 13 }} />
-        </div>
-
         {/* Insert placeholders */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 12, padding: '7px 10px', background: 'var(--paper-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', flexShrink: 0 }}>
-          <span style={{ fontSize: 11, color: 'var(--ink-3)', marginRight: 4, lineHeight: '22px' }}>Insert:</span>
-          {PLACEHOLDERS.map(ph => (
-            <span key={ph} className="ph-chip" onClick={() => insertPh(ph)} style={{ cursor: 'pointer' }}>{ph}</span>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 5, marginBottom: 12, padding: '6px 10px', background: 'var(--paper-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', flexShrink: 0 }}>
+          <span style={{ fontSize: 11, color: 'var(--ink-3)', lineHeight: '22px', marginRight: 2 }}>Subject:</span>
+          {SUBJECT_PHS.map(({ label, ph }) => (
+            <span key={ph} className="ph-chip" onClick={() => insertPhSubject(ph)} style={{ cursor: 'pointer' }}>{label}</span>
+          ))}
+          <div style={{ width: 1, height: 16, background: 'var(--border)', margin: '0 6px' }} />
+          <span style={{ fontSize: 11, color: 'var(--ink-3)', lineHeight: '22px', marginRight: 2 }}>Body:</span>
+          {BODY_PHS.map(({ label, ph }) => (
+            <span key={ph + 'b'} className="ph-chip" onClick={() => insertPhBody(ph)} style={{ cursor: 'pointer' }}>{label}</span>
           ))}
         </div>
 
@@ -83,8 +116,8 @@ export default function ViewCustomModal({ open, onClose, onSave, onOpenAll, cust
           <select value={previewIdx} onChange={e => setPreviewIdx(+e.target.value)}
             style={{ fontSize: 13, fontFamily: 'var(--sans)', background: 'var(--paper-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '5px 10px', color: 'var(--ink)', flex: 1 }}>
             <option value={-1}>— raw template (with placeholders) —</option>
-            {selectedRecipients.map((r, i) => (
-              <option key={i} value={i}>{r.name}{r.email ? ' · ' + r.email : ''}</option>
+            {recipients.map((r, i) => (
+              <option key={i} value={i}>{r.name || r.email}{r.name && r.email ? ' · ' + r.email : ''}</option>
             ))}
           </select>
         </div>
@@ -97,36 +130,65 @@ export default function ViewCustomModal({ open, onClose, onSave, onOpenAll, cust
               {previewSubject}
             </div>
           ) : (
-            <input className="field-input" value={subject} onChange={e => edit('subject', e.target.value)} style={{ fontSize: 13 }} />
+            <input id="vcm-subject" className="field-input" value={subject}
+              onChange={e => { setSubject(e.target.value); setDirty(true) }}
+              style={{ fontSize: 13 }} />
           )}
         </div>
 
         {/* Body */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, marginBottom: 12 }}>
           <label className="field-label" style={{ marginBottom: 4 }}>Body</label>
+
+          {/* Toolbar */}
+          {!recipient && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '4px 8px', background: 'var(--paper-2)', border: '1px solid var(--border)', borderBottom: 'none', borderRadius: 'var(--radius) var(--radius) 0 0', flexShrink: 0, flexWrap: 'wrap' }}>
+              {/* Font family */}
+              <select value={font} onChange={e => { setFont(e.target.value); exec('fontName', e.target.value) }}
+                style={{ fontSize: 12, fontFamily: 'var(--sans)', background: 'none', border: 'none', color: 'var(--ink)', cursor: 'pointer', height: 24, padding: '0 2px' }}>
+                {FONTS.map(f => <option key={f} value={f}>{f}</option>)}
+              </select>
+              {sep()}
+              {/* Font size */}
+              <select value={fontSize} onChange={e => { setFontSize(e.target.value); exec('fontSize', { '9':'1','10':'2','11':'3','12':'4' }[e.target.value] || '3') }}
+                style={{ fontSize: 12, fontFamily: 'var(--sans)', background: 'none', border: 'none', color: 'var(--ink)', cursor: 'pointer', height: 24, width: 38, padding: '0 2px' }}>
+                {SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+              {sep()}
+              {toolbarBtn(<strong style={{ fontSize: 13 }}>B</strong>, 'Bold', () => exec('bold'))}
+              {toolbarBtn(<em style={{ fontSize: 13 }}>I</em>, 'Italic', () => exec('italic'))}
+              {toolbarBtn(<u style={{ fontSize: 13 }}>U</u>, 'Underline', () => exec('underline'))}
+              {sep()}
+              {toolbarBtn(
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.5" fill="currentColor" stroke="none"/></svg>,
+                'Bullet list', () => exec('insertUnorderedList')
+              )}
+              {toolbarBtn(
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>,
+                'Numbered list', () => exec('insertOrderedList')
+              )}
+            </div>
+          )}
+
+          {/* Editor / preview */}
           {recipient ? (
-            <div style={{ flex: 1, padding: '10px 12px', background: 'var(--paper-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: 13, color: 'var(--ink-2)', whiteSpace: 'pre-wrap', lineHeight: 1.8, overflowY: 'auto' }}
+            <div style={{ flex: 1, padding: '14px 16px', background: 'var(--paper)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: fontSize + 'pt', fontFamily: font, color: 'var(--ink)', lineHeight: 1.8, overflowY: 'auto' }}
               dangerouslySetInnerHTML={{ __html: previewBody }} />
           ) : (
-            <textarea id="vcm-body" value={body} onChange={e => edit('body', e.target.value)}
-              style={{ flex: 1, resize: 'none', padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--paper)', color: 'var(--ink)', fontFamily: 'var(--sans)', fontSize: 13, lineHeight: 1.75, outline: 'none', minHeight: 220 }}
-              onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-              onBlur={e => e.target.style.borderColor = 'var(--border)'} />
+            <div ref={editorRef} contentEditable suppressContentEditableWarning
+              style={{ flex: 1, minHeight: 220, padding: '14px 16px', border: '1px solid var(--border)', borderRadius: '0 0 var(--radius) var(--radius)', background: 'var(--paper)', color: 'var(--ink)', fontFamily: font, fontSize: fontSize + 'pt', lineHeight: 1.8, overflowY: 'auto', outline: 'none' }}
+              onInput={() => setDirty(true)}
+              onFocus={e => e.currentTarget.style.borderColor = 'var(--accent)'}
+              onBlur={e => e.currentTarget.style.borderColor = 'var(--border)'} />
           )}
         </div>
 
         {/* Footer */}
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexShrink: 0 }}>
           <button className="btn btn-ghost" onClick={onClose}>Close</button>
-          {dirty && (
-            <button className="btn btn-ghost" onClick={save}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-              Save
-            </button>
-          )}
-          <button className="btn btn-primary" onClick={() => { onClose(); onOpenAll() }}>
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 3h7v10H6M2 8h8M7 5l3 3-3 3"/></svg>
-            Save all to Gmail Drafts
+          <button className="btn btn-primary" onClick={save} disabled={!dirty}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Save
           </button>
         </div>
 
