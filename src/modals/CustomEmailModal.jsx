@@ -287,7 +287,7 @@ export default function CustomEmailModal({ open, onClose, onSave, onView, master
             </span>
             <button className="btn btn-ghost btn-sm" onClick={() => onView(draft || customEmail)}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-              View
+              Open
             </button>
           </div>
         ) : null}

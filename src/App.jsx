@@ -162,8 +162,8 @@ export default function App() {
     showToast(failed ? `${sent} drafted, ${failed} failed` : `${sent} draft(s) saved to Gmail ✓`, failed ? 'error' : 'success')
   }
 
-  function handleSaveCustomEmail({ subject, body }) {
-    setCustomEmail({ subject, body })
+  function handleSaveCustomEmail({ subject, body, name }) {
+    setCustomEmail({ subject, body, name: name || '' })
     setCustomState('saved')
   }
 
@@ -268,7 +268,7 @@ export default function App() {
       <ViewCustomModal
         open={modals.viewCustom}
         onClose={() => closeModal('viewCustom')}
-        onEdit={() => { closeModal('viewCustom'); openModal('customEmail') }}
+        onSave={updated => { handleSaveCustomEmail(updated); setViewCustomDraft(null) }}
         onOpenAll={saveAllToGmailDrafts}
         customEmail={viewCustomDraft || customEmail}
         selectedRecipients={selectedRecipients}
