@@ -247,6 +247,7 @@ export default function CustomEmailModal({ open, onClose, onSave, onView, master
           <div style={{ fontSize: 11, color: 'var(--ink-3)', background: 'var(--paper-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '6px 10px', display: 'flex', gap: 16 }}>
             <span>Template: <strong style={{ color: masterTemplate.subject || masterTemplate.body ? 'var(--ink-2)' : 'var(--accent)' }}>{masterTemplate.subject || masterTemplate.body ? '✓ loaded' : '✗ missing'}</strong></span>
             <span>News items: <strong style={{ color: companyNewsItems.length ? 'var(--ink-2)' : 'var(--ink-3)' }}>{companyNewsItems.length > 0 ? `${companyNewsItems.length} loaded` : 'none'}</strong></span>
+            <span>Company approach: <strong style={{ color: companyApproach ? 'var(--ink-2)' : 'var(--ink-3)' }}>{companyApproach ? '✓ loaded' : 'none'}</strong></span>
           </div>
 
           <div>
