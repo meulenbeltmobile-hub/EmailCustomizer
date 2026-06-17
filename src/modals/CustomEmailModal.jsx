@@ -4,16 +4,17 @@ import { loadGenPromptsFromSheet, saveGenPromptsToSheet } from '../utils/sheetsA
 
 const DEFAULT_PROMPT = `You are an expert B2B sales copywriter specialising in logistics and supply chain solutions.
 
-Using the master email template and the company intelligence items provided below, write a personalised outreach email that:
+Using the master email template, the company intelligence items, and the company sales approach provided below, write a personalised outreach email that:
 
 1. Keeps the structure and tone of the master template
 2. Naturally weaves in 1–2 of the most relevant news items as conversation starters or proof of relevance (use the commercial_trigger and suggested_sales_angle fields to guide this)
-3. Makes the recipient feel the email was written specifically for their company — not a generic blast
-4. Stays concise: no more than 150 words in the body
-5. Ends with a clear, low-friction call to action (e.g. a 20-minute call, a short demo)
+3. If a company sales approach is provided, align the email's positioning, angle, and value proposition with it
+4. Makes the recipient feel the email was written specifically for their company — not a generic blast
+5. Stays concise: no more than 150 words in the body
+6. Ends with a clear, low-friction call to action (e.g. a 20-minute call, a short demo)
 
 Constraints:
-- Do NOT invent facts — only use what the intelligence items contain
+- Do NOT invent facts — only use what the intelligence items and sales approach contain
 - Keep all {{placeholders}} from the master template exactly as-is ({{firstname}}, {{name}}, {{lastname}}, {{email}}, {{company}})
 - Output ONLY a raw JSON object (no markdown, no explanation): {"subject":"...","body":"..."}`
 
@@ -32,7 +33,7 @@ function ListIcon()  { return <svg width="12" height="12" viewBox="0 0 24 24" fi
 function NumIcon()   { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg> }
 function ClearIcon() { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18"/><path d="M4 20h7"/><path d="M11 4l5 5-8 8H3v-5z"/></svg> }
 
-export default function CustomEmailModal({ open, onClose, onSave, onView, masterTemplate, companyNewsItems, customEmail, selectedRecipients = [], gmailToken = null }) {
+export default function CustomEmailModal({ open, onClose, onSave, onView, masterTemplate, companyNewsItems, companyApproach = '', customEmail, selectedRecipients = [], gmailToken = null }) {
   const [apiKey, setApiKey]   = useState(import.meta.env.VITE_GEMINI_API_KEY || '')
   const [model, setModel]     = useState('gemini-3.5-flash-medium')
   const [showKey, setShowKey] = useState(false)
@@ -127,11 +128,16 @@ export default function CustomEmailModal({ open, onClose, onSave, onView, master
         ).join('\n\n')
       : '\n\n(No company intelligence items available — generate from the master template only.)'
 
+    const approachContext = companyApproach
+      ? '\n\nCompany sales approach:\n' + companyApproach
+      : '\n\n(No company sales approach available.)'
+
     const fullPrompt =
       prompt.trim() +
       `\n\nMaster template subject: ${masterTemplate.subject}` +
       `\nMaster template body:\n${masterTemplate.body}` +
-      newsContext
+      newsContext +
+      approachContext
 
     try {
       const thinkingLevel = model === 'gemini-3.5-flash-high' ? 'high' : 'medium'

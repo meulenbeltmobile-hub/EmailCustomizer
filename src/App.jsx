@@ -260,6 +260,7 @@ export default function App() {
         onView={draft => { setViewCustomDraft(draft); openModal('viewCustom') }}
         masterTemplate={masterTemplate}
         companyNewsItems={companyNewsItems}
+        companyApproach={companyApproach}
         customEmail={customEmail}
         selectedRecipients={selectedRecipients}
         gmailToken={gmailAuth?.token || null}
