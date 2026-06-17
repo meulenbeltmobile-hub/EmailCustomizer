@@ -13,6 +13,7 @@ import CustomEmailModal from './modals/CustomEmailModal.jsx'
 import ViewCustomModal from './modals/ViewCustomModal.jsx'
 import CompanyApproachModal from './modals/CompanyApproachModal.jsx'
 import ModifyApproachModal from './modals/ModifyApproachModal.jsx'
+import ViewApproachModal from './modals/ViewApproachModal.jsx'
 import ConfigModal from './modals/ConfigModal.jsx'
 import { applyTpl } from './utils/helpers.js'
 import { createGmailDraft } from './utils/gmailApi.js'
@@ -97,7 +98,8 @@ export default function App() {
   useEffect(() => { localStorage.setItem('ec_customState', customState) }, [customState])
 
   // Modals
-  const [modals, setModals] = useState({ import: false, add: false, template: false, view: false, company: false, viewNews: false, companyApproach: false, modifyApproach: false, customEmail: false, viewCustom: false, config: false })
+  const [modals, setModals] = useState({ import: false, add: false, template: false, view: false, company: false, viewNews: false, companyApproach: false, modifyApproach: false, viewApproach: false, customEmail: false, viewCustom: false, config: false })
+  const [viewApproachText, setViewApproachText] = useState('')
   const [importPrefilter, setImportPrefilter] = useState('')
   function openModal(name) { setModals(m => ({ ...m, [name]: true })) }
   function closeModal(name) { setModals(m => ({ ...m, [name]: false })) }
@@ -234,9 +236,15 @@ export default function App() {
         open={modals.companyApproach}
         onClose={() => closeModal('companyApproach')}
         onSave={text => { setCompanyApproach(text); closeModal('companyApproach') }}
+        onOpen={text => { setViewApproachText(text); openModal('viewApproach') }}
         savedApproach={companyApproach}
         initialCompany={manualCompany}
         gmailToken={gmailAuth?.token || null}
+      />
+      <ViewApproachModal
+        open={modals.viewApproach}
+        onClose={() => closeModal('viewApproach')}
+        approach={viewApproachText}
       />
       <ModifyApproachModal
         open={modals.modifyApproach}

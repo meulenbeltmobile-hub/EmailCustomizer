@@ -30,7 +30,7 @@ function resolvePrompt(template, name) {
     .replace(/\{\{today\}\}/g, today)
 }
 
-export default function CompanyApproachModal({ open, onClose, onSave, savedApproach = '', initialCompany = '', gmailToken = null }) {
+export default function CompanyApproachModal({ open, onClose, onSave, onOpen, savedApproach = '', initialCompany = '', gmailToken = null }) {
   const [companyName, setCompanyName]   = useState('')
   const [apiKey, setApiKey]             = useState(import.meta.env.VITE_GEMINI_API_KEY || '')
   const [model, setModel]               = useState('gemini-3.5-flash-medium')
@@ -300,21 +300,23 @@ ${rawText}`
           </div>
         </div>
 
-        {/* Result */}
-        <div style={{ flex: 1, minHeight: 0, marginBottom: 12, display: 'flex', flexDirection: 'column' }}>
-          {result ? (
-            <div style={{ flex: 1, overflowY: 'auto', background: 'var(--paper-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '14px 16px', fontSize: 13, lineHeight: 1.8, color: 'var(--ink-2)', whiteSpace: 'pre-wrap', minHeight: 0 }}>
-              {result}
-            </div>
-          ) : (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 10, color: 'var(--ink-3)', background: 'var(--paper-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '2rem' }}>
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" style={{ opacity: 0.3 }}>
-                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-              </svg>
-              <p style={{ fontSize: 13 }}>Enter a company name and click Analyze to generate a sales approach.</p>
-            </div>
-          )}
-        </div>
+        {/* Status / result indicator */}
+        {(result || savedApproach) ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--paper-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', marginBottom: 12, flexShrink: 0 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span style={{ flex: 1, fontSize: 13, color: 'var(--ink-2)', fontWeight: 500 }}>
+              {result ? 'Analysis ready' : 'Saved analysis available'}
+            </span>
+            <button className="btn btn-ghost btn-sm" onClick={() => onOpen(result || savedApproach)}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Open
+            </button>
+          </div>
+        ) : (
+          <div style={{ padding: '10px 14px', background: 'var(--paper-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', marginBottom: 12, flexShrink: 0 }}>
+            <p style={{ fontSize: 12, color: 'var(--ink-3)', margin: 0 }}>Enter a company name and click Analyze to generate a sales approach.</p>
+          </div>
+        )}
 
         {/* Footer */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, flexShrink: 0 }}>
