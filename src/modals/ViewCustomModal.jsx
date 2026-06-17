@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { applyTpl } from '../utils/helpers.js'
 
-export default function ViewCustomModal({ open, onClose, onEdit, onOpenAll, customEmail, recipients }) {
+export default function ViewCustomModal({ open, onClose, onEdit, onOpenAll, customEmail, selectedRecipients = [] }) {
   const [selectedIdx, setSelectedIdx] = useState(-1)
 
-  const recipient = selectedIdx >= 0 ? recipients[selectedIdx] : null
-  const subject = recipient ? applyTpl(customEmail.subject, recipient) : customEmail.subject
-  const body = recipient ? applyTpl(customEmail.body, recipient) : customEmail.body
+  const email = customEmail || { subject: '', body: '' }
+  const recipient = selectedIdx >= 0 ? selectedRecipients[selectedIdx] : null
+  const subject = recipient ? applyTpl(email.subject, recipient) : email.subject
+  const body = recipient ? applyTpl(email.body, recipient) : email.body
 
   return (
     <div className={`modal-overlay${open ? ' open' : ''}`} onClick={e => e.target === e.currentTarget && onClose()}>
@@ -26,7 +27,7 @@ export default function ViewCustomModal({ open, onClose, onEdit, onOpenAll, cust
           <label style={{ fontSize: 12, color: 'var(--ink-3)', whiteSpace: 'nowrap' }}>Preview for:</label>
           <select value={selectedIdx} onChange={e => setSelectedIdx(+e.target.value)} style={{ fontSize: 13, fontFamily: 'var(--sans)', background: 'var(--paper-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '5px 10px', color: 'var(--ink)', flex: 1 }}>
             <option value={-1}>— raw template (with placeholders) —</option>
-            {recipients.map((r, i) => <option key={i} value={i}>{r.name}{r.email ? ' · ' + r.email : ''}</option>)}
+            {selectedRecipients.map((r, i) => <option key={i} value={i}>{r.name}{r.email ? ' · ' + r.email : ''}</option>)}
           </select>
         </div>
 

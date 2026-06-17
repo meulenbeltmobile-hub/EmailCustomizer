@@ -100,6 +100,7 @@ export default function App() {
   // Modals
   const [modals, setModals] = useState({ import: false, add: false, template: false, view: false, company: false, viewNews: false, companyApproach: false, modifyApproach: false, viewApproach: false, customEmail: false, viewCustom: false, config: false })
   const [viewApproachText, setViewApproachText] = useState('')
+  const [viewCustomDraft, setViewCustomDraft] = useState(null)
   const [importPrefilter, setImportPrefilter] = useState('')
   function openModal(name) { setModals(m => ({ ...m, [name]: true })) }
   function closeModal(name) { setModals(m => ({ ...m, [name]: false })) }
@@ -256,13 +257,21 @@ export default function App() {
         open={modals.customEmail}
         onClose={() => closeModal('customEmail')}
         onSave={handleSaveCustomEmail}
+        onView={draft => { setViewCustomDraft(draft); openModal('viewCustom') }}
         masterTemplate={masterTemplate}
         companyNewsItems={companyNewsItems}
         customEmail={customEmail}
         selectedRecipients={selectedRecipients}
         gmailToken={gmailAuth?.token || null}
       />
-      <ViewCustomModal open={modals.viewCustom} onClose={() => closeModal('viewCustom')} onEdit={() => openModal('customEmail')} onOpenAll={saveAllToGmailDrafts} customEmail={customEmail} recipients={recipients} />
+      <ViewCustomModal
+        open={modals.viewCustom}
+        onClose={() => closeModal('viewCustom')}
+        onEdit={() => { closeModal('viewCustom'); openModal('customEmail') }}
+        onOpenAll={saveAllToGmailDrafts}
+        customEmail={viewCustomDraft || customEmail}
+        selectedRecipients={selectedRecipients}
+      />
       <ConfigModal open={modals.config} onClose={() => closeModal('config')} gmailAuth={gmailAuth} onGmailConnect={handleGmailConnect} onGmailDisconnect={handleGmailDisconnect} />
 
       <ToastContainer toasts={toasts} />

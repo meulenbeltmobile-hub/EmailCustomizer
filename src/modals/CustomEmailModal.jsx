@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { showToast } from '../components/Toast.jsx'
 import { loadGenPromptsFromSheet, saveGenPromptsToSheet } from '../utils/sheetsApi.js'
-import { applyTpl } from '../utils/helpers.js'
 
 const DEFAULT_PROMPT = `You are an expert B2B sales copywriter specialising in logistics and supply chain solutions.
 
@@ -33,7 +32,7 @@ function ListIcon()  { return <svg width="12" height="12" viewBox="0 0 24 24" fi
 function NumIcon()   { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg> }
 function ClearIcon() { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18"/><path d="M4 20h7"/><path d="M11 4l5 5-8 8H3v-5z"/></svg> }
 
-export default function CustomEmailModal({ open, onClose, onSave, masterTemplate, companyNewsItems, customEmail, selectedRecipients = [], gmailToken = null }) {
+export default function CustomEmailModal({ open, onClose, onSave, onView, masterTemplate, companyNewsItems, customEmail, selectedRecipients = [], gmailToken = null }) {
   const [apiKey, setApiKey]   = useState(import.meta.env.VITE_GEMINI_API_KEY || '')
   const [model, setModel]     = useState('gemini-3.5-flash-medium')
   const [showKey, setShowKey] = useState(false)
@@ -53,14 +52,8 @@ export default function CustomEmailModal({ open, onClose, onSave, masterTemplate
     try { return JSON.parse(localStorage.getItem('ec_genSavedPrompts')) || [] } catch { return [] }
   })
 
-  // Recipient picker
-  const [previewEmail, setPreviewEmail] = useState('')
-
-  // Result editing
-  const [subject, setSubject] = useState('')
-  const [hasResult, setHasResult] = useState(false)
-  const editorRef   = useRef(null)
-  const subjectRef  = useRef(null)
+  // Generated result (local, not yet saved)
+  const [draft, setDraft] = useState(null) // { subject, body }
 
   useEffect(() => { localStorage.setItem('ec_genSavedPrompts', JSON.stringify(savedPrompts)) }, [savedPrompts])
   useEffect(() => { localStorage.setItem('ec_genActivePrompt', prompt) }, [prompt])
@@ -72,22 +65,7 @@ export default function CustomEmailModal({ open, onClose, onSave, masterTemplate
       setLoading(false)
       setPromptOpen(false)
       setLibraryOpen(false)
-      setPreviewEmail(selectedRecipients.length === 1 ? selectedRecipients[0].email : '')
-      // Populate editor with existing saved email if present
-      if (customEmail?.subject || customEmail?.body) {
-        setSubject(customEmail.subject || '')
-        setHasResult(true)
-        setTimeout(() => {
-          if (editorRef.current) {
-            const html = customEmail.body || ''
-            editorRef.current.innerHTML = html.includes('<') ? html : html.replace(/\n/g, '<br>')
-          }
-        }, 0)
-      } else {
-        setSubject('')
-        setHasResult(false)
-        if (editorRef.current) editorRef.current.innerHTML = ''
-      }
+      setDraft(null)
     }
   }, [open])
 
@@ -178,10 +156,8 @@ export default function CustomEmailModal({ open, onClose, onSave, masterTemplate
       const match = text.replace(/```json|```/g, '').match(/\{[\s\S]*\}/)
       if (!match) throw new Error('No JSON found in response')
       const parsed = JSON.parse(match[0])
-      setSubject(parsed.subject || '')
-      const html = (parsed.body || '').includes('<') ? parsed.body : (parsed.body || '').replace(/\n/g, '<br>')
-      if (editorRef.current) editorRef.current.innerHTML = html
-      setHasResult(true)
+      const body = (parsed.body || '').includes('<') ? parsed.body : (parsed.body || '').replace(/\n/g, '<br>')
+      setDraft({ subject: parsed.subject || '', body })
       setStatus('')
       showToast('Email generated — review and save', 'success')
     } catch (e) {
@@ -190,19 +166,8 @@ export default function CustomEmailModal({ open, onClose, onSave, masterTemplate
     setLoading(false)
   }
 
-  function exec(cmd) {
-    document.execCommand(cmd, false, null)
-    editorRef.current?.focus()
-  }
-
-  function insertPh(ph) {
-    editorRef.current?.focus()
-    document.execCommand('insertText', false, ph)
-  }
-
   function save() {
-    const body = editorRef.current?.innerHTML || ''
-    onSave({ subject, body })
+    onSave(draft)
     onClose()
     showToast('Customized email saved', 'success')
   }
@@ -218,27 +183,7 @@ export default function CustomEmailModal({ open, onClose, onSave, masterTemplate
             <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 3l10 10M13 3L3 13"/></svg>
           </button>
         </div>
-        <p className="modal-sub">Generate a personalised email from your template and company news, then edit before saving.</p>
-
-        {/* Recipient picker */}
-        {selectedRecipients.length > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexShrink: 0 }}>
-            <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--ink-3)', whiteSpace: 'nowrap' }}>Preview for</label>
-            <div style={{ position: 'relative', flex: 1 }}>
-              <select
-                value={previewEmail}
-                onChange={e => setPreviewEmail(e.target.value)}
-                style={{ width: '100%', fontFamily: 'var(--sans)', fontSize: 12, background: 'var(--paper-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '6px 28px 6px 10px', color: 'var(--ink)', appearance: 'none', cursor: 'pointer' }}
-              >
-                <option value="">— select a contact —</option>
-                {selectedRecipients.map(r => (
-                  <option key={r.email} value={r.email}>{r.name || r.email} {r.name ? `<${r.email}>` : ''}</option>
-                ))}
-              </select>
-              <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="var(--ink-3)" strokeWidth="2" strokeLinecap="round" style={{ position: 'absolute', right: 9, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}><path d="M4 6l4 4 4-4"/></svg>
-            </div>
-          </div>
-        )}
+        <p className="modal-sub">Generate a personalised email from your template and company news.</p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0 }}>
 
@@ -327,70 +272,24 @@ export default function CustomEmailModal({ open, onClose, onSave, masterTemplate
           </div>
         </div>
 
-        {/* ── Result editor ── */}
-        {hasResult && (
-          <>
-            <div style={{ borderTop: '1px solid var(--border)', margin: '12px 0 10px', flexShrink: 0 }} />
-
-            {/* Placeholder chips */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 10, padding: '7px 10px', background: 'var(--paper-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', flexShrink: 0 }}>
-              <span style={{ fontSize: 11, color: 'var(--ink-3)', marginRight: 4, lineHeight: '22px' }}>Insert:</span>
-              {['{{firstname}}', '{{lastname}}', '{{name}}', '{{email}}', '{{company}}'].map(ph => (
-                <span key={ph} className="ph-chip" onClick={() => insertPh(ph)}>{ph}</span>
-              ))}
-            </div>
-
-            {/* Subject */}
-            <div style={{ marginBottom: 10, flexShrink: 0 }}>
-              <label className="field-label" style={{ marginBottom: 4 }}>Subject</label>
-              <input ref={subjectRef} className="field-input" value={subject} onChange={e => setSubject(e.target.value)} style={{ fontSize: 13 }} />
-            </div>
-
-            {/* Rich text body */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, marginBottom: 12 }}>
-              <label className="field-label" style={{ marginBottom: 6 }}>Body</label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '5px 8px', background: 'var(--paper-2)', border: '1px solid var(--border)', borderBottom: 'none', borderRadius: 'var(--radius) var(--radius) 0 0', flexShrink: 0, flexWrap: 'wrap' }}>
-                {TOOLS.map((t, i) => t.sep
-                  ? <div key={i} style={{ width: 1, height: 16, background: 'var(--border)', margin: '0 3px' }} />
-                  : <button key={t.cmd} type="button" title={t.title} onMouseDown={e => { e.preventDefault(); exec(t.cmd) }}
-                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 24, border: 'none', background: 'none', borderRadius: 4, cursor: 'pointer', color: 'var(--ink-2)' }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'var(--paper-3)'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'none'}>
-                      {t.label}
-                    </button>
-                )}
-              </div>
-              <div ref={editorRef} contentEditable suppressContentEditableWarning
-                style={{ flex: 1, minHeight: 180, padding: '10px 12px', border: '1px solid var(--border)', borderRadius: '0 0 var(--radius) var(--radius)', background: 'var(--paper)', color: 'var(--ink)', fontFamily: 'var(--sans)', fontSize: 13, lineHeight: 1.75, overflowY: 'auto', outline: 'none' }}
-                onFocus={e => e.currentTarget.style.borderColor = 'var(--accent)'}
-                onBlur={e => e.currentTarget.style.borderColor = 'var(--border)'} />
-            </div>
-
-            {/* Live preview for selected recipient */}
-            {previewEmail && (() => {
-              const r = selectedRecipients.find(x => x.email === previewEmail)
-              if (!r) return null
-              const body = editorRef.current?.innerHTML || ''
-              return (
-                <div style={{ background: 'var(--paper-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '10px 14px', marginBottom: 4, flexShrink: 0 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--ink-3)', marginBottom: 8 }}>
-                    Preview — {r.name || r.email}
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--ink-3)', marginBottom: 4 }}>
-                    <strong style={{ color: 'var(--ink-2)' }}>Subject:</strong> {applyTpl(subject, r)}
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.75 }}
-                    dangerouslySetInnerHTML={{ __html: applyTpl(body, r) }} />
-                </div>
-              )
-            })()}
-          </>
-        )}
+        {/* Status bar */}
+        {(draft || (customEmail?.subject || customEmail?.body)) ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--paper-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', marginTop: 10, flexShrink: 0 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span style={{ flex: 1, fontSize: 13, color: 'var(--ink-2)', fontWeight: 500 }}>
+              {draft ? 'Email generated' : 'Saved email available'}
+            </span>
+            <button className="btn btn-ghost btn-sm" onClick={() => onView(draft || customEmail)}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              View
+            </button>
+          </div>
+        ) : null}
 
         {/* Footer */}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: hasResult ? 0 : '0.75rem', flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: '0.75rem', flexShrink: 0 }}>
           <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-          {hasResult && (
+          {draft && (
             <button className="btn btn-primary" onClick={save}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
               Save
