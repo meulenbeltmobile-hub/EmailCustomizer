@@ -57,9 +57,9 @@ export default function EditorPanel({
         )}
       </div>
 
-      {/* Company Information */}
+      {/* Company News */}
       <div className="panel-header" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 0 }}>
-        <span className="panel-title">Company Information</span>
+        <span className="panel-title">Company News</span>
         {activeCompany && (
           <a
             href={`https://${companyDomain(activeCompany)}`}
@@ -119,9 +119,9 @@ export default function EditorPanel({
         )}
       </div>
 
-      {/* Company Approach */}
+      {/* Value Proposition */}
       <div className="panel-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 0, borderTop: '1px solid var(--border)' }}>
-        <span className="panel-title">Company Approach</span>
+        <span className="panel-title">Value Proposition for Company</span>
       </div>
 
       <div style={{ padding: '0.875rem 1.25rem', borderBottom: '1px solid var(--border)' }}>
@@ -171,7 +171,7 @@ export default function EditorPanel({
             </svg>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)', marginBottom: 1 }}>Not generated yet</p>
-              <p style={{ fontSize: 12, color: 'var(--ink-3)' }}>Generate a personalized email using your template and company news.</p>
+              <p style={{ fontSize: 12, color: 'var(--ink-3)' }}>Generate a personalized email using your template, company news and value proposition.</p>
             </div>
             <button className="btn btn-accent btn-sm" onClick={onGenerateCustom}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
