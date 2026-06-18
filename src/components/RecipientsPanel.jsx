@@ -147,6 +147,22 @@ export default function RecipientsPanel({ recipients, activeIndex, onRecipientsC
       <div className="panel-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span className="panel-title">Recipients</span>
         <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+          {visible.length > 0 && (() => {
+            const allSelected = visible.every(r => selected.has(r.email))
+            return (
+              <button className="btn btn-ghost btn-sm" style={{ fontSize: 11 }} title={allSelected ? 'Deselect all' : 'Select all'}
+                onClick={() => {
+                  setSelected(prev => {
+                    const next = new Set(prev)
+                    if (allSelected) visible.forEach(r => next.delete(r.email))
+                    else visible.forEach(r => next.add(r.email))
+                    return next
+                  })
+                }}>
+                {allSelected ? 'Deselect all' : 'Select all'}
+              </button>
+            )
+          })()}
           {selected.size > 0 && (
             <button className="btn btn-ghost btn-sm" style={{ color: 'var(--accent)', fontSize: 11 }} onClick={deleteSelected} title="Delete selected">
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

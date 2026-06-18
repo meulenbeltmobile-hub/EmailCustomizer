@@ -7,12 +7,13 @@ export default function EditorPanel({
   companyNewsItems,
   companyApproach, approachState,
   customEmail, customState,
-  activeCompany,
+  activeCompany, activeCompanyDomain,
   onCreateTemplate, onViewTemplate,
   onFetchNews, onViewNews,
   onAnalyzeApproach, onViewApproach,
   onGenerateCustom, onViewCustom,
 }) {
+  const domain = activeCompanyDomain || (activeCompany ? companyDomain(activeCompany) : '')
   return (
     <section className="panel editor-panel" style={{ borderRight: 'none', overflowY: 'auto' }}>
 
@@ -62,7 +63,7 @@ export default function EditorPanel({
         <span className="panel-title">Company News</span>
         {activeCompany && (
           <a
-            href={`https://${companyDomain(activeCompany)}`}
+            href={`https://${domain}`}
             target="_blank"
             rel="noopener noreferrer"
             title={`Visit ${activeCompany} website`}
@@ -71,7 +72,7 @@ export default function EditorPanel({
             onMouseLeave={e => e.currentTarget.style.background = 'var(--paper-2)'}
           >
             <img
-              src={`https://logo.clearbit.com/${companyDomain(activeCompany)}`}
+              src={`https://logo.clearbit.com/${domain}`}
               alt=""
               width="14"
               height="14"

@@ -77,11 +77,28 @@ export default function App() {
     return gmailAuth.token
   }
 
-  // Company name
+  // Company name + resolved domain
   const [manualCompany, setManualCompany] = useState('')
+  const [resolvedDomain, setResolvedDomain] = useState('')
   const [visibleRecipientCount, setVisibleRecipientCount] = useState(0)
   const [visibleRecipients, setVisibleRecipients] = useState([])
   const [selectedRecipients, setSelectedRecipients] = useState([])
+
+  // Clearbit autocomplete — resolve real domain from company name
+  useEffect(() => {
+    const name = manualCompany.trim()
+    if (!name) { setResolvedDomain(''); return }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`https://autocomplete.clearbit.com/v1/companies/suggest?query=${encodeURIComponent(name)}`)
+        const data = await res.json()
+        setResolvedDomain(data?.[0]?.domain || '')
+      } catch {
+        setResolvedDomain('')
+      }
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [manualCompany])
 
   // Import history
   const [importHistory, setImportHistory] = useState(() => {
@@ -205,6 +222,7 @@ export default function App() {
           customEmail={customEmail}
           customState={customState}
           activeCompany={manualCompany}
+          activeCompanyDomain={resolvedDomain}
           onCreateTemplate={() => openModal('template')}
           onViewTemplate={() => openModal('view')}
           onFetchNews={() => openModal('company')}
@@ -270,7 +288,7 @@ export default function App() {
         onClose={() => closeModal('viewCustom')}
         onSave={updated => { handleSaveCustomEmail(updated); setViewCustomDraft(null) }}
         customEmail={viewCustomDraft || customEmail}
-        recipients={recipients}
+        recipients={selectedRecipients}
       />
       <ConfigModal open={modals.config} onClose={() => closeModal('config')} gmailAuth={gmailAuth} onGmailConnect={handleGmailConnect} onGmailDisconnect={handleGmailDisconnect} />
 

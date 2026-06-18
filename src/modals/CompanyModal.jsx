@@ -183,9 +183,9 @@ function resolvePrompt(template, name, days) {
 
 export default function CompanyModal({ open, onClose, onSave, savedItems, initialCompany = '', gmailToken = null }) {
   const [companyName, setCompanyName]   = useState('')
-  const [lookbackDays, setLookbackDays] = useState(14)
+  const [lookbackDays, setLookbackDays] = useState(60)
   const [apiKey, setApiKey]             = useState(import.meta.env.VITE_GEMINI_API_KEY || '')
-  const [model, setModel]               = useState('gemini-3.5-flash-medium')
+  const [model, setModel]               = useState('gemini-3.5-flash-high')
   const [showKey, setShowKey]           = useState(false)
   const [pending, setPending]           = useState([])
   const [running, setRunning]           = useState(false)

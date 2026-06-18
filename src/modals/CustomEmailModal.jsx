@@ -35,7 +35,7 @@ function ClearIcon() { return <svg width="12" height="12" viewBox="0 0 24 24" fi
 
 export default function CustomEmailModal({ open, onClose, onSave, onView, masterTemplate, companyNewsItems, companyApproach = '', customEmail, selectedRecipients = [], gmailToken = null }) {
   const [apiKey, setApiKey]   = useState(import.meta.env.VITE_GEMINI_API_KEY || '')
-  const [model, setModel]     = useState('gemini-3.5-flash-medium')
+  const [model, setModel]     = useState('gemini-3.5-flash-high')
   const [showKey, setShowKey] = useState(false)
   const [loading, setLoading] = useState(false)
   const [status, setStatus]   = useState('')
@@ -173,8 +173,9 @@ export default function CustomEmailModal({ open, onClose, onSave, onView, master
   }
 
   function save() {
+    if (!draft) return
     onSave(draft)
-    onClose()
+    setDraft(null)
     showToast('Customized email saved', 'success')
   }
 
