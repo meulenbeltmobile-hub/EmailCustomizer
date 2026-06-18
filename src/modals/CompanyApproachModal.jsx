@@ -31,13 +31,16 @@ function resolvePrompt(template, name) {
 }
 
 export default function CompanyApproachModal({ open, onClose, onSave, onOpen, savedApproach = '', initialCompany = '', gmailToken = null }) {
-  const [companyName, setCompanyName]   = useState('')
-  const [apiKey, setApiKey]             = useState(import.meta.env.VITE_GEMINI_API_KEY || '')
-  const [model, setModel]               = useState('gemini-3.5-flash-medium')
-  const [showKey, setShowKey]           = useState(false)
-  const [result, setResult]             = useState('')
-  const [running, setRunning]           = useState(false)
-  const [runStatus, setRunStatus]       = useState('')
+  const [companyName, setCompanyName] = useState('')
+  const [apiKey, setApiKey]           = useState(import.meta.env.VITE_GEMINI_API_KEY || '')
+  const [model, setModel]             = useState('gemini-3.5-flash-medium')
+  const [showKey, setShowKey]         = useState(false)
+  const [running, setRunning]         = useState(false)
+  const [runStatus, setRunStatus]     = useState('')
+
+  // Structured output
+  const [summary, setSummary]           = useState('')
+  const [propositions, setPropositions] = useState([]) // [{id, text, checked}]
 
   const [promptTemplate, setPromptTemplate] = useState(() => {
     try { return localStorage.getItem('ec_approachPrompt') || DEFAULT_PROMPT } catch { return DEFAULT_PROMPT }
@@ -58,16 +61,31 @@ export default function CompanyApproachModal({ open, onClose, onSave, onOpen, sa
   useEffect(() => {
     if (open) {
       setCompanyName(initialCompany)
-      setResult(savedApproach)
       setRunStatus('')
+      // Parse savedApproach back into summary + propositions if available
+      if (savedApproach) {
+        const summaryMatch = savedApproach.match(/## Strategic Summary\n([\s\S]*?)(?=\n## |$)/)
+        const propSection  = savedApproach.match(/## Value Propositions\n([\s\S]*)$/)
+        if (summaryMatch || propSection) {
+          setSummary(summaryMatch ? summaryMatch[1].trim() : '')
+          const props = propSection
+            ? propSection[1].split('\n').filter(l => l.startsWith('- ')).map((l, i) => ({ id: i, text: l.slice(2).trim(), checked: true }))
+            : []
+          setPropositions(props)
+        } else {
+          setSummary(savedApproach)
+          setPropositions([])
+        }
+      } else {
+        setSummary('')
+        setPropositions([])
+      }
     }
   }, [open])
 
   function loadPrompt(p) {
-    setPromptTemplate(p.text)
-    setPromptName(p.name)
-    setLibraryOpen(false)
-    setPromptOpen(true)
+    setPromptTemplate(p.text); setPromptName(p.name)
+    setLibraryOpen(false); setPromptOpen(true)
     showToast(`Loaded "${p.name}"`, 'success')
   }
 
@@ -86,9 +104,7 @@ export default function CompanyApproachModal({ open, onClose, onSave, onOpen, sa
     setSavedPrompts(updated)
   }
 
-  function deletePrompt(id) {
-    setSavedPrompts(savedPrompts.filter(p => p.id !== id))
-  }
+  function deletePrompt(id) { setSavedPrompts(savedPrompts.filter(p => p.id !== id)) }
 
   async function syncPromptsFromSheet() {
     if (!gmailToken || !import.meta.env.VITE_SHEETS_ID) return
@@ -120,47 +136,46 @@ export default function CompanyApproachModal({ open, onClose, onSave, onOpen, sa
     return (data.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('')
   }
 
-  async function analyze() {
+  async function run() {
     if (!companyName.trim()) { showToast('Please enter a company name first', 'error'); return }
     if (!apiKey.trim())      { showToast('Please enter your Gemini API key', 'error'); return }
-    setRunning(true)
+    setRunning(true); setSummary(''); setPropositions([])
     setRunStatus('Researching company…')
     const name = companyName.trim()
     try {
-      // Step 1 — web research
-      const searchPrompt = resolvePrompt(promptTemplate, name)
-      const rawText = await callGemini(searchPrompt, true)
+      const rawText = await callGemini(resolvePrompt(promptTemplate, name), true)
 
-      // Step 2 — generate approach
       setRunStatus('Generating sales approach…')
-      const approachPrompt = `You are an expert B2B sales strategist specializing in logistics and supply chain software and services.
+      const formatPrompt = `You are an expert B2B sales strategist specializing in logistics and supply chain.
 
-Based on the research below about ${name}, write a tailored sales approach document. Structure it as follows:
+Based on the research below about ${name}, produce a structured sales approach in JSON.
 
-## Company Overview
-A concise summary of who ${name} is and what they do.
+Output ONLY a raw JSON object (no markdown fences, no explanation):
+{
+  "strategic_summary": "3-5 sentence overview: who they are, key commercial signals, and why now is a good time to reach out",
+  "value_propositions": [
+    "Specific, actionable value proposition 1 tailored to their situation",
+    "Specific, actionable value proposition 2",
+    "Specific, actionable value proposition 3",
+    "Specific, actionable value proposition 4",
+    "Specific, actionable value proposition 5"
+  ]
+}
 
-## Key Insights
-The most relevant commercial signals, pain points, and strategic priorities.
-
-## Recommended Sales Approach
-A specific, actionable outreach strategy including:
-- Best entry point (persona and department to target)
-- Core message and value proposition to lead with
-- Specific pain points to address
-- Suggested opening angle for the first email or call
-- Topics to avoid or handle carefully
-
-## Conversation Starters
-3-5 specific, well-researched questions or talking points to use in outreach.
-
-Write in clear, professional English. Be specific — reference actual details from the research.
+Rules:
+- strategic_summary: concise, fact-based, references actual findings
+- value_propositions: 4-6 items, each one concrete and tied to a real signal or pain point from the research
+- Do NOT invent facts
 
 Research:
 ${rawText}`
 
-      const approachText = await callGemini(approachPrompt, false)
-      setResult(approachText)
+      const jsonText = await callGemini(formatPrompt, false)
+      const match = jsonText.replace(/```json|```/g, '').match(/\{[\s\S]*\}/)
+      if (!match) throw new Error('No JSON found in response')
+      const parsed = JSON.parse(match[0])
+      setSummary(parsed.strategic_summary || '')
+      setPropositions((parsed.value_propositions || []).map((text, i) => ({ id: i, text, checked: true })))
       setRunStatus('')
     } catch (e) {
       setRunStatus('Error — ' + (e.message || 'check your key and try again.'))
@@ -169,12 +184,25 @@ ${rawText}`
     setRunning(false)
   }
 
+  function toggleProp(id) {
+    setPropositions(prev => prev.map(p => p.id === id ? { ...p, checked: !p.checked } : p))
+  }
+
+  const checkedCount = propositions.filter(p => p.checked).length
+
   function save() {
-    if (!result.trim()) { showToast('Nothing to save yet', 'error'); return }
-    onSave(result)
+    const checkedProps = propositions.filter(p => p.checked)
+    const text = [
+      '## Strategic Summary',
+      summary,
+      ...(checkedProps.length ? ['\n## Value Propositions', ...checkedProps.map(p => `- ${p.text}`)] : [])
+    ].join('\n')
+    onSave(text)
     onClose()
     showToast('Sales approach saved', 'success')
   }
+
+  const hasOutput = summary || propositions.length > 0
 
   return (
     <div className={`modal-overlay${open ? ' open' : ''}`} onClick={e => e.target === e.currentTarget && onClose()}>
@@ -229,28 +257,26 @@ ${rawText}`
                     <button className="btn btn-ghost btn-sm" onClick={pushPromptsToSheet} disabled={!gmailToken} style={{ fontSize: 11 }}>Push to Sheet</button>
                   </div>
                 )}
-                {savedPrompts.length === 0 ? (
-                  <p style={{ fontSize: 12, color: 'var(--ink-3)', padding: '10px 14px', textAlign: 'center' }}>No saved prompts yet.</p>
-                ) : savedPrompts.map(p => (
-                  <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', borderBottom: '1px solid var(--border)' }}>
-                    <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
-                    <button className="btn btn-ghost btn-sm" onClick={() => loadPrompt(p)} style={{ fontSize: 11, flexShrink: 0 }}>Load</button>
-                    <button className="btn btn-ghost btn-sm btn-icon" onClick={() => { deletePrompt(p.id); showToast(`"${p.name}" deleted`) }} style={{ color: 'var(--ink-3)', flexShrink: 0 }}>
-                      <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                        <polyline points="2 4 4 4 14 4"/><path d="M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M13 4l-1 9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2L3 4"/>
-                      </svg>
-                    </button>
-                  </div>
-                ))}
+                {savedPrompts.length === 0
+                  ? <p style={{ fontSize: 12, color: 'var(--ink-3)', padding: '10px 14px', textAlign: 'center' }}>No saved prompts yet.</p>
+                  : savedPrompts.map(p => (
+                    <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', borderBottom: '1px solid var(--border)' }}>
+                      <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
+                      <button className="btn btn-ghost btn-sm" onClick={() => loadPrompt(p)} style={{ fontSize: 11, flexShrink: 0 }}>Load</button>
+                      <button className="btn btn-ghost btn-sm btn-icon" onClick={() => { deletePrompt(p.id); showToast(`"${p.name}" deleted`) }} style={{ color: 'var(--ink-3)', flexShrink: 0 }}>
+                        <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                          <polyline points="2 4 4 4 14 4"/><path d="M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M13 4l-1 9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2L3 4"/>
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
               </div>
             )}
 
             {promptOpen && (
               <div style={{ background: 'var(--paper)', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <textarea
-                  value={promptTemplate}
-                  onChange={e => setPromptTemplate(e.target.value)}
-                  style={{ width: '100%', minHeight: 200, maxHeight: 360, fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.7, color: 'var(--ink-2)', background: 'var(--paper-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 10px', resize: 'vertical', boxSizing: 'border-box' }}
+                <textarea value={promptTemplate} onChange={e => setPromptTemplate(e.target.value)}
+                  style={{ width: '100%', minHeight: 200, maxHeight: 320, fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.7, color: 'var(--ink-2)', background: 'var(--paper-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 10px', resize: 'vertical', boxSizing: 'border-box' }}
                 />
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 11, color: 'var(--ink-3)', flex: 1 }}>
@@ -291,41 +317,64 @@ ${rawText}`
                   </svg>
                 </button>
               </div>
-              <button className="btn btn-accent btn-sm" onClick={analyze} disabled={running}>
+              <button className="btn btn-accent btn-sm" onClick={run} disabled={running}>
                 {running ? <span className="spinner" style={{ width: 11, height: 11 }} /> : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>}
-                {running ? 'Analyzing…' : 'Analyze'}
+                {running ? 'Running…' : 'Run'}
               </button>
             </div>
-            {runStatus && <div style={{ fontSize: 12, color: runStatus.startsWith('Error') ? 'var(--accent)' : 'var(--ink-3)', marginTop: 5 }}>{runStatus}</div>}
+            {runStatus && <div style={{ fontSize: 12, color: runStatus.startsWith('Error') ? 'var(--accent)' : 'var(--ink-3)', marginTop: 5, display: 'flex', alignItems: 'center', gap: 6 }}>{running && <span className="spinner" style={{ width: 10, height: 10 }} />}{runStatus}</div>}
           </div>
         </div>
 
-        {/* Status / result indicator */}
-        {(result || savedApproach) ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--paper-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', marginBottom: 12, flexShrink: 0 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-            <span style={{ flex: 1, fontSize: 13, color: 'var(--ink-2)', fontWeight: 500 }}>
-              {result ? 'Analysis ready' : 'Saved analysis available'}
-            </span>
-            <button className="btn btn-ghost btn-sm" onClick={() => onOpen(result || savedApproach)}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-              Open
-            </button>
-          </div>
-        ) : (
-          <div style={{ padding: '10px 14px', background: 'var(--paper-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', marginBottom: 12, flexShrink: 0 }}>
-            <p style={{ fontSize: 12, color: 'var(--ink-3)', margin: 0 }}>Enter a company name and click Analyze to generate a sales approach.</p>
-          </div>
-        )}
+        {/* Output */}
+        <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+          {!hasOutput ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 10, color: 'var(--ink-3)', textAlign: 'center', padding: '1.5rem', background: 'var(--paper-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" style={{ opacity: 0.3 }}><path d="M2 20h.01"/><path d="M7 20v-4"/><path d="M12 20v-8"/><path d="M17 20V8"/><path d="M22 4v16"/></svg>
+              <p style={{ fontSize: 13 }}>Enter a company name and click Run to generate a sales approach.</p>
+            </div>
+          ) : (
+            <>
+              {/* Strategic summary */}
+              {summary && (
+                <div style={{ background: 'var(--paper-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '12px 14px', flexShrink: 0 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--ink-3)', marginBottom: 7 }}>Strategic summary</div>
+                  <p style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.75, margin: 0 }}>{summary}</p>
+                </div>
+              )}
+
+              {/* Value propositions */}
+              {propositions.length > 0 && (
+                <>
+                  <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--ink-3)', flexShrink: 0 }}>Value propositions — tick to keep</div>
+                  {propositions.map(p => (
+                    <label key={p.id} onClick={() => toggleProp(p.id)}
+                      style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: p.checked ? 'var(--paper-2)' : 'var(--paper)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '10px 12px', cursor: 'pointer', flexShrink: 0 }}>
+                      <input type="checkbox" checked={p.checked} onChange={() => toggleProp(p.id)} onClick={e => e.stopPropagation()}
+                        style={{ marginTop: 2, flexShrink: 0, accentColor: 'var(--accent)', width: 15, height: 15, cursor: 'pointer' }} />
+                      <span style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.65 }}>{p.text}</span>
+                    </label>
+                  ))}
+                </>
+              )}
+            </>
+          )}
+        </div>
 
         {/* Footer */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, flexShrink: 0 }}>
-          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-          <button className="btn btn-primary" onClick={save} disabled={!result.trim()}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-            Save approach
-          </button>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+          <span style={{ fontSize: 12, color: 'var(--ink-3)' }}>
+            {propositions.length > 0 ? `${checkedCount} of ${propositions.length} selected` : ''}
+          </span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+            <button className="btn btn-primary" onClick={save} disabled={!hasOutput}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Save {checkedCount > 0 ? checkedCount : ''} item{checkedCount !== 1 ? 's' : ''}
+            </button>
+          </div>
         </div>
+
       </div>
     </div>
   )

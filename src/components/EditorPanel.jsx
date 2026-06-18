@@ -10,7 +10,7 @@ export default function EditorPanel({
   activeCompany,
   onCreateTemplate, onViewTemplate,
   onFetchNews, onViewNews,
-  onAnalyzeApproach, onModifyApproach,
+  onAnalyzeApproach, onViewApproach,
   onGenerateCustom, onViewCustom,
 }) {
   return (
@@ -58,7 +58,7 @@ export default function EditorPanel({
       </div>
 
       {/* Company Information */}
-      <div className="panel-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 0 }}>
+      <div className="panel-header" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 0 }}>
         <span className="panel-title">Company Information</span>
         {activeCompany && (
           <a
@@ -150,8 +150,8 @@ export default function EditorPanel({
               </div>
             </div>
             <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-              <button className="btn btn-ghost btn-sm" onClick={onAnalyzeApproach}>Re-analyze</button>
-              <button className="btn btn-primary btn-sm" onClick={onModifyApproach}>Modify</button>
+              <button className="btn btn-ghost btn-sm" onClick={onAnalyzeApproach}>Edit</button>
+              <button className="btn btn-primary btn-sm" onClick={onViewApproach}>View</button>
             </div>
           </div>
         )}

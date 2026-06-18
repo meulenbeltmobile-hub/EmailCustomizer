@@ -210,7 +210,7 @@ export default function App() {
           onFetchNews={() => openModal('company')}
           onViewNews={() => openModal('viewNews')}
           onAnalyzeApproach={() => openModal('companyApproach')}
-          onModifyApproach={() => openModal('modifyApproach')}
+          onViewApproach={() => { setViewApproachText(companyApproach); openModal('viewApproach') }}
           onGenerateCustom={() => openModal('customEmail')}
           onViewCustom={() => openModal('viewCustom')}
         />
