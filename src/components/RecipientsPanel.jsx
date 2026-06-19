@@ -3,12 +3,6 @@ import { useState, useEffect } from 'react'
 export default function RecipientsPanel({ recipients, activeIndex, onRecipientsChange, onSelectRecipient, onAddClick, onImportClick, manualCompany, onManualCompanyChange, importHistory = [], onReImport, onDeleteHistory, onVisibleCountChange, onSelectedChange }) {
   const [companyFilter, setCompanyFilter] = useState('__ALL__')
   const [selected, setSelected] = useState(new Set())
-  const [selectedHistoryId, setSelectedHistoryId] = useState('__NEW__')
-
-  // Auto-select the most recent import when history updates
-  useEffect(() => {
-    if (importHistory.length > 0) setSelectedHistoryId(importHistory[0].id)
-  }, [importHistory.length])
 
   /* ── company options from current recipients ── */
   const companies = [...new Set(recipients.map(r => r.company).filter(Boolean))].sort()
@@ -76,17 +70,7 @@ export default function RecipientsPanel({ recipients, activeIndex, onRecipientsC
       <div style={{ padding: '0.75rem 1.25rem 0.75rem', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: importHistory.length > 0 ? 8 : 0 }}>
           <span className="panel-title">Import</span>
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={() => {
-              if (selectedHistoryId === '__NEW__') {
-                onImportClick(manualCompany.trim())
-              } else {
-                const entry = importHistory.find(h => h.id === selectedHistoryId)
-                if (entry) onReImport(entry.recipients)
-              }
-            }}
-          >
+          <button className="btn btn-primary btn-sm" onClick={() => onImportClick(manualCompany.trim())}>
             <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
               <path d="M2 10v3h12v-3M8 2v8M5 7l3 3 3-3"/>
             </svg>
@@ -94,52 +78,19 @@ export default function RecipientsPanel({ recipients, activeIndex, onRecipientsC
           </button>
         </div>
         {importHistory.length > 0 && (
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <div style={{ position: 'relative', flex: 1 }}>
-              <select
-                value={selectedHistoryId}
-                onChange={e => setSelectedHistoryId(e.target.value === '__NEW__' ? '__NEW__' : +e.target.value)}
-                style={{
-                  width: '100%', fontFamily: 'var(--sans)', fontSize: 12,
-                  background: 'var(--paper-2)', border: '1px solid var(--border)',
-                  borderRadius: 'var(--radius)', padding: '6px 26px 6px 9px',
-                  color: 'var(--ink)', appearance: 'none', cursor: 'pointer',
-                }}
-              >
-                {importHistory.map(h => (
-                  <option key={h.id} value={h.id}>{h.filename}</option>
-                ))}
-                <option value="__NEW__">— Import new file…</option>
-              </select>
-              <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="var(--ink-3)" strokeWidth="2" strokeLinecap="round" style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
-                <path d="M4 6l4 4 4-4"/>
-              </svg>
-            </div>
-            {selectedHistoryId !== '__NEW__' && (
-              <button
-                className="btn btn-ghost btn-sm btn-icon"
-                title="Remove from history"
-                onClick={() => {
-                  onDeleteHistory(selectedHistoryId)
-                  setSelectedHistoryId(
-                    importHistory.length > 1
-                      ? importHistory.find(h => h.id !== selectedHistoryId)?.id ?? '__NEW__'
-                      : '__NEW__'
-                  )
-                }}
-                style={{ color: 'var(--accent)', flexShrink: 0 }}
-              >
-                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <polyline points="2 4 4 4 14 4"/><path d="M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M13 4l-1 9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2L3 4"/>
-                </svg>
-              </button>
-            )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {importHistory.map(h => (
+              <div key={h.id} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--paper-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '5px 8px' }}>
+                <span style={{ flex: 1, fontSize: 12, color: 'var(--ink-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={h.filename}>{h.filename}</span>
+                <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, flexShrink: 0 }} onClick={() => onReImport(h.recipients)}>Load</button>
+                <button className="btn btn-ghost btn-sm btn-icon" title="Delete" style={{ color: 'var(--ink-3)', flexShrink: 0 }} onClick={() => onDeleteHistory(h.id)}>
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <polyline points="2 4 4 4 14 4"/><path d="M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M13 4l-1 9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2L3 4"/>
+                  </svg>
+                </button>
+              </div>
+            ))}
           </div>
-        )}
-        {selectedHistoryId === '__NEW__' && manualCompany.trim() && (
-          <p style={{ fontSize: 11, color: 'var(--ink-3)', marginTop: 5 }}>
-            Will filter on <strong style={{ color: 'var(--ink-2)' }}>{manualCompany.trim()}</strong>
-          </p>
         )}
       </div>
 
