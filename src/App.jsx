@@ -147,7 +147,7 @@ export default function App() {
   }
 
   async function saveAllToGmailDrafts() {
-    const toSend = visibleRecipients.length ? visibleRecipients : recipients
+    const toSend = selectedRecipients.length ? selectedRecipients : visibleRecipients.length ? visibleRecipients : recipients
     if (!toSend.length) return
     const unsent = toSend.filter(r => !r.sent)
     if (!unsent.length) { showToast('All emails already drafted this session', 'info'); return }
