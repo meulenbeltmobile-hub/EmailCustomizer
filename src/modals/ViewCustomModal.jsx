@@ -35,6 +35,14 @@ export default function ViewCustomModal({ open, onClose, onSave, customEmail, re
     }
   }, [open, customEmail])
 
+  // Restore editor content when switching back from preview to raw template
+  const recipient = previewIdx >= 0 ? recipients[previewIdx] : null
+  useEffect(() => {
+    if (!recipient && editorRef.current) {
+      editorRef.current.innerHTML = bodyHtml
+    }
+  }, [recipient])
+
   // Apply font/size to new text in editor
   useEffect(() => {
     if (!editorRef.current) return
@@ -64,10 +72,8 @@ export default function ViewCustomModal({ open, onClose, onSave, customEmail, re
     setDirty(true)
   }
 
-  const recipient = previewIdx >= 0 ? recipients[previewIdx] : null
-
   const previewSubject = recipient ? applyTpl(subject, recipient) : null
-  const previewBody    = recipient ? applyTpl(editorRef.current?.innerHTML || '', recipient) : null
+  const previewBody    = recipient ? applyTpl(bodyHtml, recipient) : null
 
   function save() {
     onSave({ subject, body: bodyHtml })
