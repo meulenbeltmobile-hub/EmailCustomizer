@@ -292,7 +292,7 @@ export default function App() {
       <ViewCustomModal
         open={modals.viewCustom}
         onClose={() => closeModal('viewCustom')}
-        onSave={updated => { handleSaveCustomEmail(updated); setViewCustomDraft(null) }}
+        onSave={updated => { handleSaveCustomEmail(updated); setViewCustomDraft(null); closeModal('viewCustom'); if (viewCustomDraft) closeModal('customEmail') }}
         customEmail={viewCustomDraft || customEmail}
         recipients={selectedRecipients}
       />

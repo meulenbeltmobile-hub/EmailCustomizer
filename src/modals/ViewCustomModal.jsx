@@ -16,6 +16,7 @@ export default function ViewCustomModal({ open, onClose, onSave, customEmail, re
   const src = customEmail || { subject: '', body: '' }
 
   const [subject, setSubject] = useState(src.subject || '')
+  const [bodyHtml, setBodyHtml] = useState(src.body || '')
   const [previewIdx, setPreviewIdx] = useState(-1)
   const [dirty, setDirty]     = useState(false)
   const [font, setFont]       = useState('Calibri')
@@ -25,6 +26,7 @@ export default function ViewCustomModal({ open, onClose, onSave, customEmail, re
   useEffect(() => {
     if (open) {
       setSubject(src.subject || '')
+      setBodyHtml(src.body || '')
       setPreviewIdx(-1)
       setDirty(false)
       if (editorRef.current) {
@@ -68,8 +70,9 @@ export default function ViewCustomModal({ open, onClose, onSave, customEmail, re
   const previewBody    = recipient ? applyTpl(editorRef.current?.innerHTML || '', recipient) : null
 
   function save() {
-    onSave({ subject, body: editorRef.current?.innerHTML || '' })
+    onSave({ subject, body: bodyHtml })
     setDirty(false)
+    onClose()
   }
 
   if (!open) return null
@@ -177,7 +180,7 @@ export default function ViewCustomModal({ open, onClose, onSave, customEmail, re
           ) : (
             <div ref={editorRef} contentEditable suppressContentEditableWarning
               style={{ flex: 1, minHeight: 220, padding: '14px 16px', border: '1px solid var(--border)', borderRadius: '0 0 var(--radius) var(--radius)', background: 'var(--paper)', color: 'var(--ink)', fontFamily: font, fontSize: fontSize + 'pt', lineHeight: 1.8, overflowY: 'auto', outline: 'none' }}
-              onInput={() => setDirty(true)}
+              onInput={e => { setDirty(true); setBodyHtml(e.currentTarget.innerHTML) }}
               onFocus={e => e.currentTarget.style.borderColor = 'var(--accent)'}
               onBlur={e => e.currentTarget.style.borderColor = 'var(--border)'} />
           )}
