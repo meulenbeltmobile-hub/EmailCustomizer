@@ -168,7 +168,8 @@ export default function App() {
         const rawBody = applyTpl(tpl.body, r)
         const htmlBody = tpl.body?.includes('<') ? rawBody : rawBody.replace(/\n/g, '<br>')
         const signature = gmailAuth.signature
-        const fullBody = signature ? `${htmlBody}<br><br><div>${signature}</div>` : htmlBody
+        const styledBody = `<div style="font-family:Calibri,Arial,sans-serif;font-size:11pt;line-height:1.5">${htmlBody}</div>`
+        const fullBody = signature ? `${styledBody}<br><div>${signature}</div>` : styledBody
         await createGmailDraft(token, { to: r.email, subject, htmlBody: fullBody })
         setRecipients(prev => prev.map(x => x.email === r.email ? { ...x, sent: true } : x))
         draftedRecipients.push(r)
