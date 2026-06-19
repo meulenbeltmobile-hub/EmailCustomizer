@@ -104,11 +104,17 @@ export default function CustomEmailModal({ open, onClose, onSave, onView, master
       showToast(`"${name}" saved`, 'success')
     }
     setSavedPrompts(updated)
+    if (gmailToken && import.meta.env.VITE_SHEETS_ID) {
+      saveGenPromptsToSheet(gmailToken, updated).catch(() => {})
+    }
   }
 
   function deletePrompt(id) {
     const updated = savedPrompts.filter(p => p.id !== id)
     setSavedPrompts(updated)
+    if (gmailToken && import.meta.env.VITE_SHEETS_ID) {
+      saveGenPromptsToSheet(gmailToken, updated).catch(() => {})
+    }
   }
 
   async function generate() {

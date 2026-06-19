@@ -253,11 +253,17 @@ export default function CompanyModal({ open, onClose, onSave, savedItems, initia
       showToast(`"${name}" saved`, 'success')
     }
     setSavedPrompts(updated)
+    if (gmailToken && import.meta.env.VITE_SHEETS_ID) {
+      saveNewsPromptsToSheet(gmailToken, updated).catch(() => {})
+    }
   }
 
   function deletePrompt(id) {
     const updated = savedPrompts.filter(p => p.id !== id)
     setSavedPrompts(updated)
+    if (gmailToken && import.meta.env.VITE_SHEETS_ID) {
+      saveNewsPromptsToSheet(gmailToken, updated).catch(() => {})
+    }
   }
 
   async function syncPromptsFromSheet() {

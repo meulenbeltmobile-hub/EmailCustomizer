@@ -102,9 +102,18 @@ export default function CompanyApproachModal({ open, onClose, onSave, onOpen, sa
       showToast(`"${name}" saved`, 'success')
     }
     setSavedPrompts(updated)
+    if (gmailToken && import.meta.env.VITE_SHEETS_ID) {
+      saveApproachPromptsToSheet(gmailToken, updated).catch(() => {})
+    }
   }
 
-  function deletePrompt(id) { setSavedPrompts(savedPrompts.filter(p => p.id !== id)) }
+  function deletePrompt(id) {
+    const updated = savedPrompts.filter(p => p.id !== id)
+    setSavedPrompts(updated)
+    if (gmailToken && import.meta.env.VITE_SHEETS_ID) {
+      saveApproachPromptsToSheet(gmailToken, updated).catch(() => {})
+    }
+  }
 
   async function syncPromptsFromSheet() {
     if (!gmailToken || !import.meta.env.VITE_SHEETS_ID) return
