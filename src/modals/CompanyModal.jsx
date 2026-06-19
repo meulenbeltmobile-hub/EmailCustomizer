@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { showToast } from '../components/Toast.jsx'
-import { loadNewsPromptsFromSheet, saveNewsPromptsToSheet } from '../utils/sheetsApi.js'
+import { loadNewsPromptsFromSheet, saveNewsPromptsToSheet, saveNewsItemsToSheet } from '../utils/sheetsApi.js'
 
 /* ── Default prompt template — uses {{company}}, {{lookback}}, {{since}}, {{today}} ── */
 const DEFAULT_PROMPT_TEMPLATE = `You are a Senior Business Intelligence Analyst specializing in commercial prospecting for the global logistics and supply chain industry.
@@ -385,9 +385,13 @@ ${rawText}`
   }
 
   function save() {
-    onSave(pending.filter(i => i.checked).map(({ checked, ...rest }) => rest))
+    const items = pending.filter(i => i.checked).map(({ checked, ...rest }) => rest)
+    onSave(items)
     onClose()
     showToast(checkedCount + ' news item(s) saved', 'success')
+    if (gmailToken && import.meta.env.VITE_SHEETS_ID) {
+      saveNewsItemsToSheet(gmailToken, items).catch(() => {})
+    }
   }
 
   const signalColor = { High: '#2d6a4f', Medium: '#b45309', Low: 'var(--ink-3)', None: 'var(--ink-3)' }

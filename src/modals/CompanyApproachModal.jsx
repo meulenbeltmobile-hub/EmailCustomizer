@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { showToast } from '../components/Toast.jsx'
-import { loadApproachPromptsFromSheet, saveApproachPromptsToSheet } from '../utils/sheetsApi.js'
+import { loadApproachPromptsFromSheet, saveApproachPromptsToSheet, saveApproachToSheet } from '../utils/sheetsApi.js'
 
 const DEFAULT_PROMPT = `You are an expert B2B sales strategist specializing in the global logistics and supply chain industry.
 
@@ -33,7 +33,7 @@ function resolvePrompt(template, name) {
 export default function CompanyApproachModal({ open, onClose, onSave, onOpen, savedApproach = '', initialCompany = '', gmailToken = null }) {
   const [companyName, setCompanyName] = useState('')
   const [apiKey, setApiKey]           = useState(import.meta.env.VITE_GEMINI_API_KEY || '')
-  const [model, setModel]             = useState('gemini-3.5-flash-medium')
+  const [model, setModel]             = useState('gemini-3.5-flash-high')
   const [showKey, setShowKey]         = useState(false)
   const [running, setRunning]         = useState(false)
   const [runStatus, setRunStatus]     = useState('')
@@ -200,6 +200,9 @@ ${rawText}`
     onSave(text)
     onClose()
     showToast('Sales approach saved', 'success')
+    if (gmailToken && import.meta.env.VITE_SHEETS_ID) {
+      saveApproachToSheet(gmailToken, text).catch(() => {})
+    }
   }
 
   const hasOutput = summary || propositions.length > 0

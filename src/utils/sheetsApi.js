@@ -45,6 +45,33 @@ export async function saveMasterTemplateToSheet(token, template) {
   })
 }
 
+/* ── News items (tab: "NewsItems", saved output) ── */
+
+export async function saveNewsItemsToSheet(token, items) {
+  if (!SHEET_ID) throw new Error('VITE_SHEETS_ID is not configured')
+  await ensureHeaders(token, 'NewsItems', ['id', 'title', 'date', 'category', 'summary', 'source', 'source_url', 'commercial_trigger', 'suggested_sales_angle', 'sales_relevance_score'])
+  await api(token, `/values/NewsItems!A2:J:clear`, 'POST')
+  if (items.length === 0) return
+  await api(token, `/values/NewsItems!A2:J?valueInputOption=RAW`, 'PUT', {
+    range: 'NewsItems!A2:J',
+    majorDimension: 'ROWS',
+    values: items.map(i => [i.id || '', i.title || '', i.date || '', i.category || '', i.summary || '', i.source || '', i.source_url || '', i.commercial_trigger || '', i.suggested_sales_angle || '', i.sales_relevance_score || ''])
+  })
+}
+
+/* ── Company approach (tab: "Approach", single content cell) ── */
+
+export async function saveApproachToSheet(token, text) {
+  if (!SHEET_ID) throw new Error('VITE_SHEETS_ID is not configured')
+  await ensureHeaders(token, 'Approach', ['content', 'saved_at'])
+  const savedAt = new Date().toISOString()
+  await api(token, `/values/Approach!A2:B2?valueInputOption=RAW`, 'PUT', {
+    range: 'Approach!A2:B2',
+    majorDimension: 'ROWS',
+    values: [[text, savedAt]]
+  })
+}
+
 /* ── News prompts (tab: "NewsPrompts") ── */
 
 export async function loadNewsPromptsFromSheet(token) {
@@ -86,6 +113,20 @@ export async function saveApproachPromptsToSheet(token, prompts) {
     range: 'ApproachPrompts!A2:C',
     majorDimension: 'ROWS',
     values: prompts.map(p => [p.id, p.name, p.text])
+  })
+}
+
+/* ── Gmail drafts log (tab: "GmailDrafts") ── */
+
+export async function logGmailDraftsToSheet(token, drafts) {
+  if (!SHEET_ID) throw new Error('VITE_SHEETS_ID is not configured')
+  await ensureHeaders(token, 'GmailDrafts', ['saved_at', 'company', 'firstname', 'lastname', 'email'])
+  const savedAt = new Date().toISOString()
+  const rows = drafts.map(r => [savedAt, r.company || '', r.firstname || r.name?.split(' ')[0] || '', r.lastname || r.name?.split(' ').slice(1).join(' ') || '', r.email || ''])
+  await api(token, `/values/GmailDrafts!A:E:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`, 'POST', {
+    range: 'GmailDrafts!A:E',
+    majorDimension: 'ROWS',
+    values: rows
   })
 }
 

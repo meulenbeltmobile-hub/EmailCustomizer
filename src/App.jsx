@@ -17,6 +17,7 @@ import ViewApproachModal from './modals/ViewApproachModal.jsx'
 import ConfigModal from './modals/ConfigModal.jsx'
 import { applyTpl } from './utils/helpers.js'
 import { createGmailDraft } from './utils/gmailApi.js'
+import { logGmailDraftsToSheet } from './utils/sheetsApi.js'
 
 export default function App() {
   const { toasts, addToast } = useToast()
@@ -159,6 +160,7 @@ export default function App() {
 
     showToast(`Saving ${unsent.length} draft(s) to Gmail…`)
     let sent = 0, failed = 0
+    const draftedRecipients = []
     for (const r of unsent) {
       try {
         const tpl = customState === 'saved' ? customEmail : masterTemplate
@@ -169,6 +171,7 @@ export default function App() {
         const fullBody = signature ? `${htmlBody}<br><br><div>${signature}</div>` : htmlBody
         await createGmailDraft(token, { to: r.email, subject, htmlBody: fullBody })
         setRecipients(prev => prev.map(x => x.email === r.email ? { ...x, sent: true } : x))
+        draftedRecipients.push(r)
         sent++
       } catch (e) {
         console.error('Failed to draft for', r.email, e)
@@ -177,6 +180,9 @@ export default function App() {
       }
     }
     showToast(failed ? `${sent} drafted, ${failed} failed` : `${sent} draft(s) saved to Gmail ✓`, failed ? 'error' : 'success')
+    if (draftedRecipients.length > 0 && import.meta.env.VITE_SHEETS_ID) {
+      logGmailDraftsToSheet(token, draftedRecipients).catch(() => {})
+    }
   }
 
   function handleSaveCustomEmail({ subject, body, name }) {
