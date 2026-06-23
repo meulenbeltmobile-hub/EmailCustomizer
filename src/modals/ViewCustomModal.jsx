@@ -18,9 +18,10 @@ export default function ViewCustomModal({ open, onClose, onSave, customEmail, re
   const [subject, setSubject] = useState(src.subject || '')
   const [bodyHtml, setBodyHtml] = useState(src.body || '')
   const [previewIdx, setPreviewIdx] = useState(-1)
-  const [dirty, setDirty]     = useState(false)
-  const [font, setFont]       = useState('Calibri')
+  const [dirty, setDirty]       = useState(false)
+  const [font, setFont]         = useState('Calibri')
   const [fontSize, setFontSize] = useState('11')
+  const [translating, setTranslating] = useState(false)
   const editorRef = useRef(null)
 
   useEffect(() => {
@@ -82,6 +83,44 @@ export default function ViewCustomModal({ open, onClose, onSave, customEmail, re
   }
 
   if (!open) return null
+
+  async function translateToFrench() {
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+    if (!apiKey) { alert('Gemini API key not configured'); return }
+    setTranslating(true)
+    try {
+      const prompt = `Translate the following email subject and HTML body to French.
+- Preserve all HTML tags exactly as-is
+- Preserve all placeholders like {{firstname}}, {{lastname}}, {{name}}, {{email}}, {{company}} exactly as-is — do NOT translate them
+- Output ONLY a raw JSON object, no markdown fences:
+{"subject": "...", "body": "..."}
+
+Subject: ${subject}
+
+Body:
+${bodyHtml}`
+
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2 } }) }
+      )
+      const data = await res.json()
+      if (data.error) throw new Error(data.error.message)
+      const raw = (data.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('')
+      const match = raw.replace(/```json|```/g, '').match(/\{[\s\S]*\}/)
+      if (!match) throw new Error('No JSON in response')
+      const parsed = JSON.parse(match[0])
+      setSubject(parsed.subject || subject)
+      const newBody = parsed.body || bodyHtml
+      setBodyHtml(newBody)
+      if (editorRef.current) editorRef.current.innerHTML = newBody
+      setDirty(true)
+    } catch (e) {
+      alert('Translation failed: ' + e.message)
+    }
+    setTranslating(false)
+  }
 
   const toolbarBtn = (label, title, action) => (
     <button type="button" title={title} onMouseDown={e => { e.preventDefault(); action() }}
@@ -193,7 +232,10 @@ export default function ViewCustomModal({ open, onClose, onSave, customEmail, re
         </div>
 
         {/* Footer */}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexShrink: 0, alignItems: 'center' }}>
+          <button className="btn btn-ghost btn-sm" onClick={translateToFrench} disabled={translating || !!recipient} title={recipient ? 'Switch to raw template view to translate' : 'Translate to French'} style={{ marginRight: 'auto', fontSize: 12 }}>
+            {translating ? <><span className="spinner" style={{ width: 10, height: 10 }} /> Translating…</> : '🇫🇷 Translate to French'}
+          </button>
           <button className="btn btn-ghost" onClick={onClose}>Close</button>
           <button className="btn btn-primary" onClick={save} disabled={!dirty}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
