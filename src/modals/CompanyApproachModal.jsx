@@ -374,28 +374,29 @@ ${rawText}`
                 </>
               )}
 
-              {/* Manual note */}
-              {hasOutput && (
-                <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden', flexShrink: 0 }}>
-                  <label style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '9px 12px', cursor: 'pointer', background: manualNoteChecked ? 'var(--paper-2)' : 'var(--paper)' }}
-                    onClick={() => setManualNoteChecked(v => !v)}>
-                    <input type="checkbox" checked={manualNoteChecked} onChange={() => setManualNoteChecked(v => !v)} onClick={e => e.stopPropagation()}
-                      style={{ flexShrink: 0, accentColor: 'var(--accent)', width: 15, height: 15, cursor: 'pointer' }} />
-                    <span style={{ fontSize: 13, color: 'var(--ink-2)', fontWeight: 500 }}>Add manual note</span>
-                  </label>
-                  {manualNoteChecked && (
-                    <textarea
-                      value={manualNote}
-                      onChange={e => setManualNote(e.target.value)}
-                      placeholder="Describe your desired approach, specific angles, or any context to include…"
-                      style={{ width: '100%', minHeight: 90, fontFamily: 'var(--sans)', fontSize: 13, color: 'var(--ink)', background: 'var(--paper)', border: 'none', borderTop: '1px solid var(--border)', padding: '10px 12px', resize: 'vertical', boxSizing: 'border-box', outline: 'none', lineHeight: 1.6 }}
-                    />
-                  )}
-                </div>
-              )}
             </>
           )}
         </div>
+
+        {/* Manual note — always visible above footer when there is output */}
+        {hasOutput && (
+          <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden', flexShrink: 0, marginBottom: 12 }}>
+            <label style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '9px 12px', cursor: 'pointer', background: manualNoteChecked ? 'var(--paper-2)' : 'var(--paper)' }}
+              onClick={() => setManualNoteChecked(v => !v)}>
+              <input type="checkbox" checked={manualNoteChecked} onChange={() => setManualNoteChecked(v => !v)} onClick={e => e.stopPropagation()}
+                style={{ flexShrink: 0, accentColor: 'var(--accent)', width: 15, height: 15, cursor: 'pointer' }} />
+              <span style={{ fontSize: 13, color: 'var(--ink-2)', fontWeight: 500 }}>Add manual note</span>
+            </label>
+            {manualNoteChecked && (
+              <textarea
+                value={manualNote}
+                onChange={e => setManualNote(e.target.value)}
+                placeholder="Describe your desired approach, specific angles, or any context to include…"
+                style={{ width: '100%', minHeight: 90, fontFamily: 'var(--sans)', fontSize: 13, color: 'var(--ink)', background: 'var(--paper)', border: 'none', borderTop: '1px solid var(--border)', padding: '10px 12px', resize: 'vertical', boxSizing: 'border-box', outline: 'none', lineHeight: 1.6 }}
+              />
+            )}
+          </div>
+        )}
 
         {/* Footer */}
         <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
