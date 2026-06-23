@@ -156,7 +156,6 @@ export default function CustomEmailModal({ open, onClose, onSave, onView, master
             contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
             generationConfig: {
               maxOutputTokens: 4096,
-              responseMimeType: 'application/json',
               thinkingConfig: { thinkingLevel }
             }
           })
