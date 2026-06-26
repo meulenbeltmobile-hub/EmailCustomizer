@@ -44,11 +44,13 @@ export default function App() {
 
   // Company news
   const [companyNewsItems, setCompanyNewsItems] = useState([])
+  const [newsCompany, setNewsCompany] = useState(() => localStorage.getItem('ec_newsCompany') || '')
 
   // Company approach
   const [companyApproach, setCompanyApproach] = useState(() => {
     try { return localStorage.getItem('ec_companyApproach') || '' } catch { return '' }
   })
+  const [approachCompany, setApproachCompany] = useState(() => localStorage.getItem('ec_approachCompany') || '')
   const approachState = companyApproach ? 'saved' : 'empty'
 
   // Custom email
@@ -58,6 +60,7 @@ export default function App() {
   const [customState, setCustomState] = useState(() => {
     try { return localStorage.getItem('ec_customState') || 'empty' } catch { return 'empty' }
   })
+  const [customEmailCompany, setCustomEmailCompany] = useState(() => localStorage.getItem('ec_customEmailCompany') || '')
 
   // Gmail OAuth
   const [gmailAuth, setGmailAuth] = useState(() => {
@@ -114,6 +117,9 @@ export default function App() {
   useEffect(() => { localStorage.setItem('ec_companyApproach', companyApproach) }, [companyApproach])
   useEffect(() => { localStorage.setItem('ec_customEmail', JSON.stringify(customEmail)) }, [customEmail])
   useEffect(() => { localStorage.setItem('ec_customState', customState) }, [customState])
+  useEffect(() => { localStorage.setItem('ec_newsCompany', newsCompany) }, [newsCompany])
+  useEffect(() => { localStorage.setItem('ec_approachCompany', approachCompany) }, [approachCompany])
+  useEffect(() => { localStorage.setItem('ec_customEmailCompany', customEmailCompany) }, [customEmailCompany])
 
   // Modals
   const [modals, setModals] = useState({ import: false, add: false, template: false, view: false, company: false, viewNews: false, companyApproach: false, modifyApproach: false, viewApproach: false, customEmail: false, viewCustom: false, config: false })
@@ -193,6 +199,7 @@ export default function App() {
   function handleSaveCustomEmail({ subject, body, name }) {
     setCustomEmail({ subject, body, name: name || '' })
     setCustomState('saved')
+    setCustomEmailCompany(manualCompany)
   }
 
   return (
@@ -235,6 +242,9 @@ export default function App() {
           customState={customState}
           activeCompany={manualCompany}
           activeCompanyDomain={resolvedDomain}
+          newsCompany={newsCompany}
+          approachCompany={approachCompany}
+          customEmailCompany={customEmailCompany}
           onCreateTemplate={() => openModal('template')}
           onViewTemplate={() => openModal('view')}
           onFetchNews={() => openModal('company')}
@@ -261,12 +271,12 @@ export default function App() {
         gmailToken={gmailAuth?.token || null}
       />
       <ViewModal open={modals.view} onClose={() => closeModal('view')} onEdit={() => openModal('template')} masterTemplate={masterTemplate} />
-      <CompanyModal open={modals.company} onClose={() => closeModal('company')} onSave={setCompanyNewsItems} savedItems={companyNewsItems} initialCompany={manualCompany} gmailToken={gmailAuth?.token || null} />
+      <CompanyModal open={modals.company} onClose={() => closeModal('company')} onSave={(items, company) => { setCompanyNewsItems(items); setNewsCompany(company) }} savedItems={companyNewsItems} initialCompany={manualCompany} gmailToken={gmailAuth?.token || null} />
       <ViewNewsModal open={modals.viewNews} onClose={() => closeModal('viewNews')} newsItems={companyNewsItems} />
       <CompanyApproachModal
         open={modals.companyApproach}
         onClose={() => closeModal('companyApproach')}
-        onSave={text => { setCompanyApproach(text); closeModal('companyApproach') }}
+        onSave={(text, company) => { setCompanyApproach(text); setApproachCompany(company); closeModal('companyApproach') }}
         onOpen={text => { setViewApproachText(text); openModal('viewApproach') }}
         savedApproach={companyApproach}
         initialCompany={manualCompany}

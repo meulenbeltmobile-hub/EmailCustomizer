@@ -8,6 +8,7 @@ export default function EditorPanel({
   companyApproach, approachState,
   customEmail, customState,
   activeCompany, activeCompanyDomain,
+  newsCompany, approachCompany, customEmailCompany,
   onCreateTemplate, onViewTemplate,
   onFetchNews, onViewNews,
   onAnalyzeApproach, onViewApproach,
@@ -109,7 +110,7 @@ export default function EditorPanel({
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                 <span className="badge badge-green">✓ Saved</span>
-                {activeCompany && <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--ink-2)' }}>{activeCompany}</span>}
+                {newsCompany && <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--ink-2)' }}>{newsCompany}</span>}
               </div>
               <div style={{ fontSize: 12, color: 'var(--ink-3)' }}>{companyNewsItems.length} news item{companyNewsItems.length !== 1 ? 's' : ''} saved</div>
             </div>
@@ -145,7 +146,7 @@ export default function EditorPanel({
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
                 <span className="badge badge-green" style={{ flexShrink: 0 }}>✓ Saved</span>
-                {activeCompany && <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--ink-2)' }}>{activeCompany}</span>}
+                {approachCompany && <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--ink-2)' }}>{approachCompany}</span>}
               </div>
               <div style={{ fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {(companyApproach || '').replace(/#+\s*/g, '').slice(0, 120)}{(companyApproach || '').length > 120 ? '…' : ''}
@@ -163,7 +164,7 @@ export default function EditorPanel({
       <div className="panel-header" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 0, borderTop: '1px solid var(--border)' }}>
         <span className="panel-title">Customized Email Template</span>
         {customState === 'saved' && <span className="badge badge-green" style={{ textTransform: 'none', letterSpacing: 0 }}>✓ Ready</span>}
-        {customState === 'saved' && activeCompany && <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--ink-2)' }}>{activeCompany}</span>}
+        {customState === 'saved' && customEmailCompany && <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--ink-2)' }}>{customEmailCompany}</span>}
       </div>
 
       <div style={{ padding: '0.875rem 1.25rem' }}>

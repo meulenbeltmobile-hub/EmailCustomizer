@@ -218,7 +218,7 @@ ${rawText}`
     if (checkedProps.length) parts.push('\n## Value Propositions', ...checkedProps.map(p => `- ${p.text}`))
     if (manualNoteChecked && manualNote.trim()) parts.push('\n## Additional Notes', manualNote.trim())
     const text = parts.join('\n')
-    onSave(text)
+    onSave(text, companyName.trim())
     onClose()
     showToast('Sales approach saved', 'success')
     if (gmailToken && import.meta.env.VITE_SHEETS_ID) {

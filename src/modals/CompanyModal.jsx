@@ -392,7 +392,7 @@ ${rawText}`
 
   function save() {
     const items = pending.filter(i => i.checked).map(({ checked, ...rest }) => rest)
-    onSave(items)
+    onSave(items, companyName.trim())
     onClose()
     showToast(checkedCount + ' news item(s) saved', 'success')
     if (gmailToken && import.meta.env.VITE_SHEETS_ID) {
