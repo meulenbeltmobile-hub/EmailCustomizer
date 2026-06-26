@@ -1,12 +1,13 @@
 import { useState } from 'react'
 
-export default function Topbar({ recipientCount, totalRecipientCount, hasRecipients, onOpenAll, onConfig, configConnected, gmailConnected, gmailEmail }) {
+export default function Topbar({ recipientCount, totalRecipientCount, selectedCount, hasRecipients, onOpenAll, onConfig, configConnected, gmailConnected, gmailEmail }) {
   const [sending, setSending] = useState(false)
   const [showWarning, setShowWarning] = useState(false)
   const isFiltered = totalRecipientCount > 0 && recipientCount !== totalRecipientCount
+  const draftCount = selectedCount > 0 ? selectedCount : recipientCount
 
   function handleOpenAll() {
-    if (recipientCount > 10) {
+    if (draftCount > 10) {
       setShowWarning(true)
       return
     }
@@ -35,7 +36,7 @@ export default function Topbar({ recipientCount, totalRecipientCount, hasRecipie
                 <span className="spinner" style={{ width: 11, height: 11 }} /> Saving drafts…
               </button>
             : <button className="btn btn-primary btn-sm" onClick={handleOpenAll} disabled={!hasRecipients}>
-                Save all to Gmail Drafts
+                Save {selectedCount > 0 ? selectedCount : 'all'} to Gmail Drafts
               </button>
           }
           <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 2px' }} />
@@ -68,12 +69,12 @@ export default function Topbar({ recipientCount, totalRecipientCount, hasRecipie
               <p style={{ fontWeight: 600, fontSize: 15, color: 'var(--ink)', margin: 0 }}>Large batch</p>
             </div>
             <p style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.6, marginBottom: 20 }}>
-              You are about to save <strong>{recipientCount} Gmail drafts</strong>. This may take a few seconds. Continue?
+              You are about to save <strong>{draftCount} Gmail drafts</strong>. This may take a few seconds. Continue?
             </p>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button className="btn btn-ghost" onClick={() => setShowWarning(false)}>Cancel</button>
               <button className="btn btn-primary" onClick={launch}>
-                Save {recipientCount} drafts
+                Save {draftCount} drafts
               </button>
             </div>
           </div>

@@ -18,8 +18,9 @@ export default function EditorPanel({
     <section className="panel editor-panel" style={{ borderRight: 'none', overflowY: 'auto' }}>
 
       {/* Master Template */}
-      <div className="panel-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="panel-header" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span className="panel-title">Master Template</span>
+        {templateExists && <span className="badge badge-green" style={{ textTransform: 'none', letterSpacing: 0 }}>✓ Saved</span>}
       </div>
 
       <div style={{ padding: '0.875rem 1.25rem', borderBottom: '1px solid var(--border)' }}>
@@ -107,8 +108,8 @@ export default function EditorPanel({
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>Company</span>
                 <span className="badge badge-green">✓ Saved</span>
+                {activeCompany && <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--ink-2)' }}>{activeCompany}</span>}
               </div>
               <div style={{ fontSize: 12, color: 'var(--ink-3)' }}>{companyNewsItems.length} news item{companyNewsItems.length !== 1 ? 's' : ''} saved</div>
             </div>
@@ -143,8 +144,8 @@ export default function EditorPanel({
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>Sales approach</span>
                 <span className="badge badge-green" style={{ flexShrink: 0 }}>✓ Saved</span>
+                {activeCompany && <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--ink-2)' }}>{activeCompany}</span>}
               </div>
               <div style={{ fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {(companyApproach || '').replace(/#+\s*/g, '').slice(0, 120)}{(companyApproach || '').length > 120 ? '…' : ''}
@@ -159,8 +160,10 @@ export default function EditorPanel({
       </div>
 
       {/* Customized Email Template */}
-      <div className="panel-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 0, borderTop: '1px solid var(--border)' }}>
+      <div className="panel-header" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 0, borderTop: '1px solid var(--border)' }}>
         <span className="panel-title">Customized Email Template</span>
+        {customState === 'saved' && <span className="badge badge-green" style={{ textTransform: 'none', letterSpacing: 0 }}>✓ Ready</span>}
+        {customState === 'saved' && activeCompany && <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--ink-2)' }}>{activeCompany}</span>}
       </div>
 
       <div style={{ padding: '0.875rem 1.25rem' }}>

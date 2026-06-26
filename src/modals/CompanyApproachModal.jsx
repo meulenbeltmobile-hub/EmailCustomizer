@@ -62,12 +62,11 @@ export default function CompanyApproachModal({ open, onClose, onSave, onOpen, sa
     if (open) {
       setCompanyName(initialCompany)
       setRunStatus('')
-      setManualNote('')
-      setManualNoteChecked(false)
-      // Parse savedApproach back into summary + propositions if available
+      // Parse savedApproach back into summary + propositions + manual note if available
       if (savedApproach) {
         const summaryMatch = savedApproach.match(/## Strategic Summary\n([\s\S]*?)(?=\n## |$)/)
-        const propSection  = savedApproach.match(/## Value Propositions\n([\s\S]*)$/)
+        const propSection  = savedApproach.match(/## Value Propositions\n([\s\S]*?)(?=\n## |$)/)
+        const notesMatch   = savedApproach.match(/## Additional Notes\n([\s\S]*)$/)
         if (summaryMatch || propSection) {
           setSummary(summaryMatch ? summaryMatch[1].trim() : '')
           const props = propSection
@@ -78,9 +77,18 @@ export default function CompanyApproachModal({ open, onClose, onSave, onOpen, sa
           setSummary(savedApproach)
           setPropositions([])
         }
+        if (notesMatch) {
+          setManualNote(notesMatch[1].trim())
+          setManualNoteChecked(true)
+        } else {
+          setManualNote('')
+          setManualNoteChecked(false)
+        }
       } else {
         setSummary('')
         setPropositions([])
+        setManualNote('')
+        setManualNoteChecked(false)
       }
     }
   }, [open])

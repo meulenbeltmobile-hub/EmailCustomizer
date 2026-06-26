@@ -44,10 +44,13 @@ export default function RecipientsPanel({ recipients, activeIndex, onRecipientsC
     })
   }
 
+  const visibleSelected = visible.filter(r => selected.has(r.email))
+
   function deleteSelected() {
-    const next = recipients.filter(r => !selected.has(r.email))
+    const toDelete = new Set(visibleSelected.map(r => r.email))
+    const next = recipients.filter(r => !toDelete.has(r.email))
+    setSelected(prev => { const s = new Set(prev); toDelete.forEach(e => s.delete(e)); return s })
     onRecipientsChange(next)
-    setSelected(new Set())
     onSelectRecipient(0)
   }
 
@@ -114,12 +117,12 @@ export default function RecipientsPanel({ recipients, activeIndex, onRecipientsC
               </button>
             )
           })()}
-          {selected.size > 0 && (
+          {visibleSelected.length > 0 && (
             <button className="btn btn-ghost btn-sm" style={{ color: 'var(--accent)', fontSize: 11 }} onClick={deleteSelected} title="Delete selected">
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <polyline points="2 4 4 4 14 4"/><path d="M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M13 4l-1 9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2L3 4"/>
               </svg>
-              Delete {selected.size}
+              Delete {visibleSelected.length}
             </button>
           )}
           <button className="btn btn-ghost btn-sm btn-icon" title="Add recipient" onClick={() => onAddClick(companyFilter !== '__ALL__' ? companyFilter : manualCompany)}>

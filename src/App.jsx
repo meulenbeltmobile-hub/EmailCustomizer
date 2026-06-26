@@ -147,7 +147,11 @@ export default function App() {
   }
 
   async function saveAllToGmailDrafts() {
-    const toSend = selectedRecipients.length ? selectedRecipients : visibleRecipients.length ? visibleRecipients : recipients
+    if (!selectedRecipients.length) {
+      showToast('Please select at least one recipient first', 'error')
+      return
+    }
+    const toSend = selectedRecipients
     if (!toSend.length) return
     const unsent = toSend.filter(r => !r.sent)
     if (!unsent.length) { showToast('All emails already drafted this session', 'info'); return }
@@ -196,6 +200,7 @@ export default function App() {
       <Topbar
         recipientCount={visibleRecipientCount}
         totalRecipientCount={recipients.length}
+        selectedCount={selectedRecipients.length}
         hasRecipients={recipients.length > 0}
         onOpenAll={saveAllToGmailDrafts}
         onConfig={() => openModal('config')}
