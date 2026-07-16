@@ -10,8 +10,8 @@ export default function EditorPanel({
   activeCompany, activeCompanyDomain,
   newsCompany, approachCompany, customEmailCompany,
   onCreateTemplate, onViewTemplate,
-  onFetchNews, onViewNews,
-  onAnalyzeApproach, onViewApproach,
+  onFetchNews, onViewNews, onClearNews,
+  onAnalyzeApproach, onViewApproach, onClearApproach,
   onGenerateCustom, onViewCustom,
 }) {
   const domain = activeCompanyDomain || (activeCompany ? companyDomain(activeCompany) : '')
@@ -115,6 +115,9 @@ export default function EditorPanel({
               <div style={{ fontSize: 12, color: 'var(--ink-3)' }}>{companyNewsItems.length} news item{companyNewsItems.length !== 1 ? 's' : ''} saved</div>
             </div>
             <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+              <button className="btn btn-ghost btn-sm btn-icon" onClick={onClearNews} title="Delete company news" style={{ color: 'var(--ink-3)' }}>
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="2 4 4 4 14 4"/><path d="M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M13 4l-1 9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2L3 4"/></svg>
+              </button>
               <button className="btn btn-ghost btn-sm" onClick={onFetchNews}>Edit</button>
               <button className="btn btn-primary btn-sm" onClick={onViewNews}>View news</button>
             </div>
@@ -153,6 +156,9 @@ export default function EditorPanel({
               </div>
             </div>
             <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+              <button className="btn btn-ghost btn-sm btn-icon" onClick={onClearApproach} title="Delete value proposition" style={{ color: 'var(--ink-3)' }}>
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="2 4 4 4 14 4"/><path d="M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M13 4l-1 9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2L3 4"/></svg>
+              </button>
               <button className="btn btn-ghost btn-sm" onClick={onAnalyzeApproach}>Edit</button>
               <button className="btn btn-primary btn-sm" onClick={onViewApproach}>View</button>
             </div>

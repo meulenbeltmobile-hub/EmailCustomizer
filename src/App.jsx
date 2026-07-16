@@ -249,8 +249,10 @@ export default function App() {
           onViewTemplate={() => openModal('view')}
           onFetchNews={() => openModal('company')}
           onViewNews={() => openModal('viewNews')}
+          onClearNews={() => { setCompanyNewsItems([]); setNewsCompany('') }}
           onAnalyzeApproach={() => openModal('companyApproach')}
           onViewApproach={() => { setViewApproachText(companyApproach); openModal('viewApproach') }}
+          onClearApproach={() => { setCompanyApproach(''); setApproachCompany('') }}
           onGenerateCustom={() => openModal('customEmail')}
           onViewCustom={() => openModal('viewCustom')}
         />
