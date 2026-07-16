@@ -41,6 +41,22 @@ export default function TemplateModal({ open, onClose, onSave, masterTemplate, r
     })
   }
 
+  function wrapAsList(tag) {
+    const ta = bodyRef.current
+    if (!ta) return
+    const start = ta.selectionStart
+    const end   = ta.selectionEnd
+    const selected = body.slice(start, end)
+    const lines = selected ? selected.split('\n').filter(l => l.trim()) : ['']
+    const html = `<${tag}>\n` + lines.map(l => `  <li>${l.trim()}</li>`).join('\n') + `\n</${tag}>`
+    const newBody = body.slice(0, start) + html + body.slice(end)
+    setBody(newBody)
+    requestAnimationFrame(() => {
+      ta.focus()
+      ta.setSelectionRange(start + html.length, start + html.length)
+    })
+  }
+
   function loadTemplate(tpl) {
     setSubject(tpl.subject)
     setBody(tpl.body)
@@ -173,6 +189,14 @@ export default function TemplateModal({ open, onClose, onSave, masterTemplate, r
             <div style={{ display: 'flex', gap: 3 }}>
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => wrapSelection('b')} title="Bold" style={{ fontWeight: 700, fontSize: 12, padding: '2px 7px' }}>B</button>
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => wrapSelection('i')} title="Italic" style={{ fontStyle: 'italic', fontSize: 12, padding: '2px 7px' }}>I</button>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => wrapAsList('ul')} title="Bullet list — select lines then click" style={{ fontSize: 12, padding: '2px 7px' }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 3 }}><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.5" fill="currentColor" stroke="none"/></svg>
+                List
+              </button>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => wrapAsList('ol')} title="Numbered list — select lines then click" style={{ fontSize: 12, padding: '2px 7px' }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 3 }}><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
+                1. List
+              </button>
             </div>
           </div>
           <textarea ref={bodyRef} className="field-textarea" value={body} onChange={e => setBody(e.target.value)} style={{ flex: 1, minHeight: 320, resize: 'vertical' }} placeholder={"Dear {{firstname}},\n\n…"} />
