@@ -268,3 +268,20 @@ textarea { scrollbar-width: auto; scrollbar-color: var(--ink-3) var(--paper-2); 
   border-radius: 99px;
   transition: width 0.3s;
 }
+
+/* ─── RICH TEXT EDITOR ─── */
+/* Chrome's insertUnorderedList/insertOrderedList auto-applies margin-left
+   to surrounding divs to "match" list indentation — reset that so plain
+   paragraphs stay left-aligned with bullet text. */
+.rich-editor div,
+.rich-editor p {
+  margin-left: 0 !important;
+}
+.rich-editor ul,
+.rich-editor ol {
+  padding-left: 1.4em;
+  margin: 0.25em 0;
+}
+.rich-editor li {
+  margin: 0;
+}

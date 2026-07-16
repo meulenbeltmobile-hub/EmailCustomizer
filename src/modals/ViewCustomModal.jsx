@@ -223,7 +223,7 @@ ${bodyHtml}`
             <div style={{ flex: 1, padding: '14px 16px', background: 'var(--paper)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: fontSize + 'pt', fontFamily: font, color: 'var(--ink)', lineHeight: 1.8, overflowY: 'auto' }}
               dangerouslySetInnerHTML={{ __html: previewBody }} />
           ) : (
-            <div ref={editorRef} contentEditable suppressContentEditableWarning
+            <div ref={editorRef} contentEditable suppressContentEditableWarning className="rich-editor"
               style={{ flex: 1, minHeight: 220, padding: '14px 16px', border: '1px solid var(--border)', borderRadius: '0 0 var(--radius) var(--radius)', background: 'var(--paper)', color: 'var(--ink)', fontFamily: font, fontSize: fontSize + 'pt', lineHeight: 1.8, overflowY: 'auto', outline: 'none' }}
               onInput={e => { setDirty(true); setBodyHtml(e.currentTarget.innerHTML) }}
               onFocus={e => e.currentTarget.style.borderColor = 'var(--accent)'}
