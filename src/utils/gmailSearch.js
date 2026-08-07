@@ -26,56 +26,6 @@ function extractEmail(str) {
   return plain ? plain[1].toLowerCase().trim() : null
 }
 
-function decodeBase64(data) {
-  try { return atob(data.replace(/-/g, '+').replace(/_/g, '/')) } catch { return '' }
-}
-
-function extractTextBody(payload) {
-  if (!payload) return ''
-  if (payload.mimeType === 'text/plain' && payload.body?.data) return decodeBase64(payload.body.data)
-  if (payload.parts) {
-    for (const part of payload.parts) {
-      const text = extractTextBody(part)
-      if (text) return text
-    }
-  }
-  return ''
-}
-
-function parseBounceRecipient(message) {
-  const headers = message.payload?.headers || []
-
-  // 1. X-Failed-Recipients header — most reliable
-  const failed = getHeader(headers, 'X-Failed-Recipients')
-  if (failed) {
-    const email = extractEmail(failed)
-    if (email) return email
-  }
-
-  // 2. RFC 3464 DSN body patterns
-  const body = extractTextBody(message.payload)
-  const patterns = [
-    /Final-Recipient:\s*rfc822;\s*([^\s\r\n<>]+)/i,
-    /Original-Recipient:\s*rfc822;\s*([^\s\r\n<>]+)/i,
-    /(?:failed\s+recipient|undeliverable\s+(?:address|mail)\s+to|could not be delivered to|unable to deliver to)[:\s]+<?\s*([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/i,
-    /The following address[^:]*failed[^:]*:\s*\n?\s*([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/i,
-  ]
-  for (const re of patterns) {
-    const m = body.match(re)
-    if (m) {
-      const email = extractEmail(m[1]) || (m[1].includes('@') ? m[1].trim().toLowerCase() : null)
-      if (email) return email
-    }
-  }
-
-  // 3. Fallback: first email in snippet that isn't the sender domain
-  const snippet = message.snippet || ''
-  const snipEmail = snippet.match(/([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/)
-  if (snipEmail) return snipEmail[1].toLowerCase()
-
-  return null
-}
-
 // ── Public API ────────────────────────────────────────────────────────────────
 
 export async function scanBounces(token, months, onProgress) {
@@ -100,13 +50,32 @@ export async function scanBounces(token, months, onProgress) {
   const results = []
   const seen = new Set()
 
+  // metadata only — format=full downloads entire emails incl. attachments and can crash
+  const qparts = 'format=metadata&metadataHeaders=X-Failed-Recipients&metadataHeaders=From&metadataHeaders=Date&metadataHeaders=Subject'
+
   for (let i = 0; i < ids.length; i += 10) {
     const batch = ids.slice(i, i + 10)
-    const messages = await Promise.all(batch.map(id => gGet(token, `/messages/${id}?format=full`)))
+    // .catch(() => null) isolates individual message failures so one bad message
+    // doesn't abort the entire batch
+    const messages = await Promise.all(
+      batch.map(id => gGet(token, `/messages/${id}?${qparts}`).catch(() => null))
+    )
 
     for (const msg of messages) {
+      if (!msg) continue
       const headers = msg.payload?.headers || []
-      const email = parseBounceRecipient(msg)
+      let email = null
+
+      // X-Failed-Recipients is the most reliable indicator and is available in metadata
+      const failed = getHeader(headers, 'X-Failed-Recipients')
+      if (failed) email = extractEmail(failed)
+
+      // Fallback: first email address found in the snippet
+      if (!email) {
+        const m = (msg.snippet || '').match(/([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/)
+        if (m) email = m[1].toLowerCase()
+      }
+
       if (email && !seen.has(email)) {
         seen.add(email)
         results.push({
@@ -147,13 +116,16 @@ export async function scanLeftCompany(token, months, onProgress) {
   const results = []
   const seen = new Set()
 
+  const qparts = 'format=metadata&metadataHeaders=From&metadataHeaders=Date&metadataHeaders=Subject'
+
   for (let i = 0; i < ids.length; i += 10) {
     const batch = ids.slice(i, i + 10)
-    // metadata is enough here — snippet + From header
-    const qparts = ['format=metadata', 'metadataHeaders=From', 'metadataHeaders=Date', 'metadataHeaders=Subject'].join('&')
-    const messages = await Promise.all(batch.map(id => gGet(token, `/messages/${id}?${qparts}`)))
+    const messages = await Promise.all(
+      batch.map(id => gGet(token, `/messages/${id}?${qparts}`).catch(() => null))
+    )
 
     for (const msg of messages) {
+      if (!msg) continue
       const headers = msg.payload?.headers || []
       const from = getHeader(headers, 'From')
       const email = extractEmail(from)
