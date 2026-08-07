@@ -39,16 +39,14 @@ export default function Topbar({ recipientCount, totalRecipientCount, selectedCo
                 Save {selectedCount > 0 ? selectedCount : 'all'} to Gmail Drafts
               </button>
           }
-          {gmailConnected && (
-            <button className="btn btn-ghost btn-sm" onClick={onCheckErrors} title="Scan inbox for bounced emails and left-company replies" style={{ fontSize: 12 }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                <polyline points="22,6 12,13 2,6"/>
-                <line x1="12" y1="17" x2="12.01" y2="17"/>
-              </svg>
-              Check email errors
-            </button>
-          )}
+          <button className="btn btn-ghost btn-sm" onClick={onCheckErrors} title="Scan inbox for bounced emails and left-company replies" style={{ fontSize: 12 }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+              <polyline points="22,6 12,13 2,6"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            Check email errors
+          </button>
           <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 2px' }} />
           <button className="btn btn-ghost btn-sm btn-icon" onClick={onConfig} title="Gmail configuration" style={{ position: 'relative' }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">

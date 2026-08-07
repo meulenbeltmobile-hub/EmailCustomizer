@@ -115,7 +115,7 @@ export default function EmailErrorModal({ open, onClose, gmailToken }) {
             style={{ fontSize: 13, fontFamily: 'var(--sans)', background: 'var(--paper-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '5px 10px', color: 'var(--ink)' }}>
             {PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
           </select>
-          <button className="btn btn-primary btn-sm" onClick={scan} disabled={scanning} style={{ marginLeft: 'auto' }}>
+          <button className="btn btn-primary btn-sm" onClick={scan} disabled={scanning || !gmailToken} style={{ marginLeft: 'auto' }}>
             {scanning
               ? <><span className="spinner" style={{ width: 11, height: 11 }} /> Scanning…</>
               : <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0 }}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Scan inbox</>}
@@ -156,8 +156,18 @@ export default function EmailErrorModal({ open, onClose, gmailToken }) {
           </div>
         )}
 
+        {/* Not connected */}
+        {!gmailToken && !hasResults && !scanning && (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--ink-3)', gap: 8, paddingBottom: 24 }}>
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" style={{ opacity: 0.25 }}>
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <p style={{ fontSize: 13 }}>Connect your Gmail account in <strong>Settings (⚙)</strong> to scan your inbox.</p>
+          </div>
+        )}
+
         {/* Empty state before scan */}
-        {!hasResults && !scanning && !error && (
+        {gmailToken && !hasResults && !scanning && !error && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--ink-3)', gap: 8, paddingBottom: 24 }}>
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" style={{ opacity: 0.25 }}>
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
