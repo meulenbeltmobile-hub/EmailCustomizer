@@ -15,6 +15,7 @@ import CompanyApproachModal from './modals/CompanyApproachModal.jsx'
 import ModifyApproachModal from './modals/ModifyApproachModal.jsx'
 import ViewApproachModal from './modals/ViewApproachModal.jsx'
 import ConfigModal from './modals/ConfigModal.jsx'
+import EmailErrorModal from './modals/EmailErrorModal.jsx'
 import { applyTpl } from './utils/helpers.js'
 import { createGmailDraft } from './utils/gmailApi.js'
 import { logGmailDraftsToSheet } from './utils/sheetsApi.js'
@@ -122,7 +123,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem('ec_customEmailCompany', customEmailCompany) }, [customEmailCompany])
 
   // Modals
-  const [modals, setModals] = useState({ import: false, add: false, template: false, view: false, company: false, viewNews: false, companyApproach: false, modifyApproach: false, viewApproach: false, customEmail: false, viewCustom: false, config: false })
+  const [modals, setModals] = useState({ import: false, add: false, template: false, view: false, company: false, viewNews: false, companyApproach: false, modifyApproach: false, viewApproach: false, customEmail: false, viewCustom: false, config: false, emailErrors: false })
   const [viewApproachText, setViewApproachText] = useState('')
   const [viewCustomDraft, setViewCustomDraft] = useState(null)
   const [importPrefilter, setImportPrefilter] = useState('')
@@ -210,6 +211,7 @@ export default function App() {
         selectedCount={selectedRecipients.length}
         hasRecipients={recipients.length > 0}
         onOpenAll={saveAllToGmailDrafts}
+        onCheckErrors={() => openModal('emailErrors')}
         onConfig={() => openModal('config')}
         configConnected={!!gmailAuth?.token}
         gmailConnected={!!gmailAuth?.token}
@@ -315,6 +317,7 @@ export default function App() {
         recipients={selectedRecipients}
       />
       <ConfigModal open={modals.config} onClose={() => closeModal('config')} gmailAuth={gmailAuth} onGmailConnect={handleGmailConnect} onGmailDisconnect={handleGmailDisconnect} />
+      <EmailErrorModal open={modals.emailErrors} onClose={() => closeModal('emailErrors')} gmailToken={gmailAuth?.token || null} />
 
       <ToastContainer toasts={toasts} />
     </>
