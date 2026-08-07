@@ -136,23 +136,27 @@ export default function EmailErrorModal({ open, onClose, gmailToken }) {
         {hasResults && (
           <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
 
-            {/* Delivery failures */}
-            <div style={{ marginBottom: 18 }}>
-              <SectionHeader label="Delivery failures" count={bounces?.length || 0} />
-              {bounces?.length === 0
-                ? <div style={{ fontSize: 12, color: 'var(--ink-3)', fontStyle: 'italic', padding: '4px 0 8px' }}>No delivery failures detected in this period.</div>
-                : bounces.map((r, i) => <ResultRow key={i} icon={iconBounce} {...r} />)
-              }
-            </div>
+            {/* Delivery failures — only once this scan has actually returned */}
+            {bounces !== null && (
+              <div style={{ marginBottom: 18 }}>
+                <SectionHeader label="Delivery failures" count={bounces.length} />
+                {bounces.length === 0
+                  ? <div style={{ fontSize: 12, color: 'var(--ink-3)', fontStyle: 'italic', padding: '4px 0 8px' }}>No delivery failures detected in this period.</div>
+                  : bounces.map((r, i) => <ResultRow key={i} icon={iconBounce} {...r} />)
+                }
+              </div>
+            )}
 
-            {/* Left company */}
-            <div>
-              <SectionHeader label="Left company" count={leftCompany?.length || 0} />
-              {leftCompany?.length === 0
-                ? <div style={{ fontSize: 12, color: 'var(--ink-3)', fontStyle: 'italic', padding: '4px 0 8px' }}>No "left company" messages detected in this period.</div>
-                : leftCompany.map((r, i) => <ResultRow key={i} icon={iconLeft} {...r} />)
-              }
-            </div>
+            {/* Left company — only once this scan has actually returned */}
+            {leftCompany !== null && (
+              <div>
+                <SectionHeader label="Left company" count={leftCompany.length} />
+                {leftCompany.length === 0
+                  ? <div style={{ fontSize: 12, color: 'var(--ink-3)', fontStyle: 'italic', padding: '4px 0 8px' }}>No "left company" messages detected in this period.</div>
+                  : leftCompany.map((r, i) => <ResultRow key={i} icon={iconLeft} {...r} />)
+                }
+              </div>
+            )}
           </div>
         )}
 
